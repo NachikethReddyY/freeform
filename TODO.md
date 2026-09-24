@@ -1,5 +1,13 @@
 # Freeform tasks
 
+## Stroke and edge control proof — 2026-09-25
+
+- [x] Verify Rounded → Sharp on a selected rectangle in the visible editor. Zen Page 6 showed the corners switch from rounded to square and the Sharp state selected; screenshots are saved locally.
+- [x] Verify Solid Cartoonist has a visibly rougher outline and that the selected state and geometry persist after hard reload.
+- [x] Resolve Sloppiness with Dashed/Dotted rectangle strokes: Cartoonist now changes the outline while preserving the dash pattern. The selected-state screenshot, dotted hard reload and native dotted SVG export passed.
+- [x] Extend the same behavior to dashed/dotted native straight lines and preserve Sharp corners in the rough rectangle renderer. The visible line bends stayed selectable at two points after hard reload; the selected Sharp dotted rectangle and native SVG export retained square corners and the dot pattern. Focused stroke tests pass 10/10.
+- [ ] Update the issue log and screenshot-rich HTML report, run focused checks, commit/push, then verify the Postplan update.
+
 ## Sequence move regression — 2026-09-25
 
 - [x] Keep every invisible binding anchor in the inserted Sequence selection so dragging the diagram moves the anchors and visible nodes together. A focused movement assertion covers all 21 native shapes.
