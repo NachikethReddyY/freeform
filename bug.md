@@ -8,10 +8,10 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 | Area | Status | Evidence sample | Confidence / limit |
 | --- | --- | --- | --- |
-| Bold text | Improved in editor/SVG; export matrix open | Before/after browser screenshots and SVG show heavier bold via a text shadow on the regular Excalifont glyphs | PNG/thumbnail output and other font families need proof |
-| Latest editor layout | Named states pass | 1280px prior check; 1016px selected-card, 720px toolbar, More, existing-shape reopen, action icons and compact card browser checks | Tool lock and remaining mobile/theme combinations remain open |
-| Dashboard hook crash | Fresh workflow matrix passes; cause unresolved | Zen create/open/search/select/rename/move/delete/restore/collection rename/reload transitions without recurrence; 19 board tests | Original failing hook/cause not identified |
-| Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, real/fallback preview; two-board bulk move, Copy link, collection-rename cancel, and 720px selected/menu layout | Larger library and multi-browser behavior unverified |
+| Bold text | Editor/SVG/selected PNG/thumbnail pass | One synthetic regular/bold phrase showed heavier bold in the editor, downloaded selection PNG and saved text-only card after reload | Other fonts and larger boards need proof |
+| Latest editor layout | Named states pass | 1280px prior check; 1016px selected-card, 720px toolbar, More, existing-shape reopen, action icons, compact card and tool-lock browser checks | Remaining mobile/theme combinations remain open |
+| Dashboard hook crash | Fresh workflow matrix passes; cause unresolved | Zen create/open/search/select/rename/move/delete/restore/collection rename/reload transitions without recurrence; 20 board tests | Original failing hook/cause not identified |
+| Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, text-only/shape/fallback preview; two-board bulk move, Copy link, collection-rename cancel, and 720px selected/menu layout | Larger library and multi-browser behavior unverified |
 | Diagram insertion/retry | Fixed in focused proof | Actual tldraw fixture and local API; placement, bindings, early ack, retry, undo/page guards | No live model call; latest shell not covered by fixture |
 | Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; geometry Stroke/Background preset, custom, transparent, reload, SVG and PNG checks | Notes/frames/highlights/media and label colors remain outside the implementation |
 | New diagram controls | Named flows pass | Connected-node browser insertion; one starter and personal-block save/reload/reinsert | Five starters have focused native-shape tests; browser proof is narrower than all templates/directions |
@@ -31,19 +31,28 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### B01 — Bold Excalifont has no visible weight change
 
-- [ ] **Fix and visually verify.**
+- [x] **Fix and visually verify within the Excalifont sample.**
 - **Reproduce:** create regular Excalifont text, duplicate it, apply Bold, and compare the two at the same font size/zoom. Reload, then compare native SVG and PNG/thumbnail output.
 - **Observed:** regular and bold font aliases resolved to the same `Excalifont-Regular.woff2`; the bold mark did not visibly increase weight.
-- **Current state:** local alias/export loading is fixed. Browser before/after screenshots show a heavier bold span in the editor; an exported SVG retains the text-shadow workaround. It preserves the Excalifont glyph family. PNG/thumbnail output remains unverified, so this issue stays open.
+- **Current state:** local alias/export loading is fixed. Browser before/after screenshots show a heavier bold span in the editor; an exported SVG retains the text-shadow workaround. A selected-shape PNG downloaded from a synthetic `Regular Bold` phrase shows the second word visibly heavier while retaining the Excalifont glyph family. The text-only dashboard thumbnail now shows both words with distinct weight after reload.
+- **New evidence:** app-only `bold-render-app.png`, selected export `bold-export-selection.png`, and fixed card `text-preview-fixed.png` from the 2026-09-25 Helium run.
 - **Required proof:** regular/bold comparison in the live editor and after reload, plus SVG and PNG/preview. Preserve glyph shape and other text styles.
 - **Owner:** Sol/root. Font loading evidence only (local evidence: default-result.json).
+
+### B14 — Text-only board thumbnail loses visible text
+
+- [x] **Render a legible dashboard preview for a text-only board and verify after reload.**
+- **Reproduce:** create a board with a single Large text shape reading `Regular Bold`, format only the second word Bold, return to the dashboard and hard reload.
+- **Cause and fix:** tldraw produced a valid 255.5×81.16 PNG, but the storage validator rejected fractional dimensions and retained a stale 48×81 blank preview. Preview capture now waits for fonts before measuring, and storage accepts finite fractional dimensions within its size limits.
+- **Proof:** 20 board tests and production build pass. A hard-reloaded Helium dashboard visibly shows the `Regular Bold` card thumbnail and the pre-existing geometry-heavy previews (local evidence: `text-preview-fixed.png`).
+- **Owner:** Sol/root.
 
 ### B03 — Dashboard hook-order runtime crash
 
 - [ ] **Identify the original cause or close with a reproducible regression test.**
 - **Reproduce from the report:** load the dashboard during the board-card/preview update; a React hook-order error blocked rendering. The exact prior hook transition was not retained.
 - **Current state:** all `BoardPreviewCard` hooks and `BoardDashboard` hooks are unconditional before returns. Fresh Zen reload, create/open/back, and dashboard rendering succeeded without recurrence.
-- **Evidence:** Luna's integrated browser report and a further Zen matrix across create/open/search/select/rename/move/delete/restore/collection rename/reload transitions; 19 board tests and production build pass. The first inspection already contained the refactored hook structure, so no exact source-level cause is claimed. Current dashboard (local evidence: dashboard-regression-zen.png).
+- **Evidence:** Luna's integrated browser report and a further Zen matrix across create/open/search/select/rename/move/delete/restore/collection rename/reload transitions; 20 board tests and production build pass. The first inspection already contained the refactored hook structure, so no exact source-level cause is claimed. Current dashboard (local evidence: dashboard-regression-zen.png).
 - **Required proof:** preserve the stack and state transition if this recurs. Recheck empty/populated/filtered/Trash transitions and preview arrival in a fresh session.
 - **Owner:** Luna/root.
 
@@ -58,10 +67,10 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### B05 — Tool lock remains outside the toolbar pill
 
-- [ ] **Place and verify the lock inside the toolbar.**
+- [x] **Place and verify the lock inside the toolbar.**
 - **Reproduce:** open the board and inspect the top tool-lock control beside the drawing toolbar.
-- **Last observation:** lock began at x408 while the toolbar pill began at x428.
-- **Required proof:** lock visibly belongs to the pill in open/closed lock states; Q/native tool-lock behavior still works.
+- **Current state:** with Rectangle selected, the existing toolbar CSS contains the native lock in the pill at desktop and 720×947; the header stays clear. Clicking the lock changes its icon, and Q toggles it. At 720px, a drag with lock off returned to Select, while a drag with lock on kept Rectangle selected. App-only evidence: `tool-lock-desktop-app.jpg`, `tool-lock-720-app.jpg`.
+- **Limit:** these are the checked widths and Rectangle tool state. DevTools logged a passive-event `preventDefault` error during simulated drags, though drawing and lock behavior remained usable; this needs separate triage.
 - **Owner:** Sol/root.
 
 ### B06 — More chevron points the wrong way when closed
@@ -102,10 +111,10 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### B10 — Dashboard card metadata styling and narrow layout need final checks
 
-- [ ] **Verify grey metadata patches are removed.**
+- [x] **Verify grey metadata patches are removed.**
 - [x] **Verify dashboard layout at desktop and 720px.**
 - **Reproduce:** open the dashboard with a real preview, a fallback card, collections, and card menus.
-- **Current state:** desktop proof covers full-height sidebar, sidebar logo, content-header search, Select icon, bottom-right ellipsis, the 22px fallback, and a real preview without grey metadata patches. At 720px, collections wrap into a compact top strip, search/count/Select fit, and two cards remain visible without overlap. The card menu originally opened above the card and over the heading/search; it now anchors to the ellipsis, opens below at 720×947/desktop and flips above at 720×590. Clean 720px layout (local evidence: dashboard-720-clean.png), menu below (local evidence: dashboard-720-menu-fixed.png), short-height flip (local evidence: dashboard-720-short-menu.png).
+- **Current state:** desktop proof covers full-height sidebar, sidebar logo, content-header search, Select icon, bottom-right ellipsis, the 22px fallback, and real previews without grey metadata patches. At 720px, collections wrap into a compact top strip, search/count/Select fit, and two cards remain visible without overlap. The card menu originally opened above the card and over the heading/search; it now anchors to the ellipsis, opens below at 720×947/desktop and flips above at 720×590. Clean 720px layout (local evidence: dashboard-card-clean-720.png), desktop cards with two synthetic previews (local evidence: dashboard-multiple-preview-wide.jpg), menu below (local evidence: dashboard-720-menu-fixed.png), short-height flip (local evidence: dashboard-720-short-menu.png). The current card CSS already uses transparent metadata surfaces, so no component change was needed.
 - **Owner:** Luna/root.
 
 ### Acceptance gaps that are not established defects

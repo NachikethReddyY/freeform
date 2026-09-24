@@ -1,5 +1,14 @@
 # Freeform tasks
 
+## Visual follow-up — 2026-09-25
+
+- [x] Verify native tool-lock position and Q behavior on a lockable tool at desktop and 720px; current CSS places it inside the pill and browser proof passed for Rectangle.
+- [x] Show geometry-only Background controls only when a geometry tool or geometry selection can use them; Arrow hides it and Rectangle shows it in Helium at 720px.
+- [x] Review dashboard card metadata backgrounds, preview balance, and ellipsis position against the annotated screenshot; transparent metadata and lower-right menu passed desktop and 720px checks.
+- [x] Verify heavier Excalifont bold in selected PNG and dashboard thumbnail without substituting another font family; text-only preview capture now waits for fonts and stores fractional dimensions. Browser proof passed after hard reload.
+- [x] Save app-only proof screenshots, refresh the issue log and six-image HTML report, and publish Postplan v3 after the focused browser and build checks passed.
+- [x] Commit and push the matching source checkpoint, then verify the remote head.
+
 ## Follow-up UX verification — 2026-09-25
 
 - [x] Add keyboard navigation and an active result state to board-content search; ArrowUp/Down, Enter selection/centering, Escape, Clear and no-results passed on a disposable board. Five focused search tests pass.
@@ -10,7 +19,7 @@
 ## Diagramming and editor UX expansion — 2026-09-24
 
 - [x] Review the idea brief, existing Excalidraw source, installed tldraw SDK, and license boundaries; publish an honest feature map.
-- [ ] Finish compact editor chrome and style controls; 720px toolbar, 1016px selected card, compact color picker, rounded rectangle SVG/reload, S→XL rectangle label growth and independent geometry Stroke/Background color have browser proof. A selected-shape pass covers width, dash, sloppiness selection, rounded edge, picker, opacity, icon actions, text size, bold, More and panel reopening. Bold PNG/thumbnail output and some mobile/theme combinations remain open.
+- [ ] Finish compact editor chrome and style controls; 720px toolbar, 1016px selected card, compact color picker, rounded rectangle SVG/reload, S→XL rectangle label growth and independent geometry Stroke/Background color have browser proof. A selected-shape pass covers width, dash, sloppiness selection, rounded edge, picker, opacity, icon actions, text size, bold, More and panel reopening. Excalifont bold PNG/thumbnail output passed; some mobile/theme combinations remain open.
 - [x] Add four-direction connected-node creation with native bound arrows; focused tests cover the directions and a disposable-board browser check proves insertion.
 - [x] Add an explicit slide organizer with native frame order; browser proof covers reorder, undo, reload, fullscreen/Escape, and rename cancel.
 - [x] Add native JSON export/import into a new room; browser proof covers `.json` download, new-board import/reload, and invalid import without source mutation.
@@ -20,7 +29,7 @@
 - [x] Add five editable diagram starters and personal blocks; browser proof covers starter insertion and save/reload/reinsert.
 - [x] Add bounded `.excalidraw` v2 interchange with conversion/omission reports; browser proof covers fixture preview (three ready, one image skipped), new-board import/reload, and a parsed export with three elements and one binding. No Excalidraw source was copied.
 - [x] Run the integrated build and focused feature suites: boards 19/19, diagrams 26/26, slides 14/14, palette 3/3, combined portability/style/search/routing 25/25, and MCP smoke 10 protocol checks. Dashboard/style browser reviews resolved the observed trashed-board title and contextual Connect-label regressions; remaining gaps are tracked below and in `bug.md`.
-- [x] Capture and evaluate disposable-board/dashboard screenshots at desktop, 720px and a 390px report viewport; four safe app screenshots are embedded in the final HTML.
+- [x] Capture and evaluate disposable-board/dashboard screenshots at desktop, 720px and a 390px report viewport; the latest HTML embeds six safe app/export screenshots.
 - [x] Commit safe checkpoints, push the authorized GitHub remote, publish a sanitized HTML progress report with four embedded screenshots to Postplan, and verify both external destinations. The public report is https://tjs0vhq7es5c.postplan.dev.
 - [x] Add compact board-content search across pages with result jump/focus; focused tests and a disposable two-page browser pass covered match/no-match, clear/Escape, cross-page selection and camera centering.
 - [x] Resolve screenshot review findings: starter branch labels now clear connectors, slide thumbnails/active row are legible, and the 720px dashboard has clean browser proof.

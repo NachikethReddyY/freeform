@@ -195,6 +195,9 @@ function FreeformStylePanel() {
 	const geo = useValue('freeform geo tool', () => editor.getStyleForNextShape(GeoShapeGeoStyle), [editor])
 	const selectedCount = selected.length
 	const isText = selectedCount ? selected.some((shape) => shape.type === 'text' || shape.type === 'note') : tool === 'text' || tool === 'note'
+	const showGeometryBackground = selectedCount
+		? selected.every((shape) => shape.type === 'geo')
+		: tool === 'geo'
 	const strokeKind = selectedCount
 		? selected.every((shape) => shape.type === 'arrow') ? 'arrow'
 			: selected.every((shape) => shape.type === 'line') ? 'line'
@@ -202,7 +205,7 @@ function FreeformStylePanel() {
 		: tool === 'arrow' || tool === 'line' ? tool : tool === 'geo' && isRectangleGeo(geo) ? 'rectangle' : null
 	return <DefaultStylePanel>
 		<StyleGroup title={isText ? 'Color' : 'Stroke'}><FreeformColorPicker /></StyleGroup>
-		{!isText && <StyleGroup title="Background"><FreeformBackgroundPicker /></StyleGroup>}
+		{showGeometryBackground && <StyleGroup title="Background"><FreeformBackgroundPicker /></StyleGroup>}
 		{!isText && <StyleGroup title="Fill"><FreeformFillPicker /></StyleGroup>}
 		{strokeKind ? <FreeformStrokeControls kind={strokeKind} /> : !isText && <StyleGroup title="Stroke style"><StylePanelDashPicker /></StyleGroup>}
 		<StyleGroup title={isText ? 'Font size' : 'Size'}><StylePanelSizePicker /></StyleGroup>

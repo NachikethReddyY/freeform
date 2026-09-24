@@ -28,9 +28,9 @@ export function isBoardPreview(value: unknown, roomId?: string): value is BoardP
 		&& typeof item.pageId === 'string' && /^page:.{1,128}$/.test(item.pageId)
 		&& item.blob instanceof Blob && item.blob.type === 'image/png'
 		&& item.blob.size > 0 && item.blob.size <= MAX_BOARD_PREVIEW_BYTES
-		&& typeof item.width === 'number' && Number.isInteger(item.width)
+		&& typeof item.width === 'number' && Number.isFinite(item.width)
 		&& item.width > 0 && item.width <= MAX_BOARD_PREVIEW_SIZE
-		&& typeof item.height === 'number' && Number.isInteger(item.height)
+		&& typeof item.height === 'number' && Number.isFinite(item.height)
 		&& item.height > 0 && item.height <= MAX_BOARD_PREVIEW_SIZE
 		&& typeof item.updatedAt === 'number' && Number.isFinite(item.updatedAt) && item.updatedAt >= 0
 }

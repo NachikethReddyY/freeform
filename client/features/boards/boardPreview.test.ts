@@ -25,6 +25,8 @@ test('stored previews are bounded PNGs tied to one valid room and page', () => {
 	assert.equal(isBoardPreview({ ...preview, pageId: 'not-a-page' }), false)
 	assert.equal(isBoardPreview({ ...preview, width: 481 }), false)
 	assert.equal(isBoardPreview({ ...preview, height: 0 }), false)
+	assert.equal(isBoardPreview({ ...preview, width: 255.5, height: 81.15882352941176 }), true)
+	assert.equal(isBoardPreview({ ...preview, width: Number.NaN }), false)
 	assert.equal(isBoardPreview({ ...preview, updatedAt: Number.NaN }), false)
 	assert.equal(isBoardPreview({ ...preview, blob: new Blob(['svg'], { type: 'image/svg+xml' }) }), false)
 	assert.equal(isBoardPreview({ ...preview, blob: new Blob([new Uint8Array(MAX_BOARD_PREVIEW_BYTES + 1)], { type: 'image/png' }) }), false)
@@ -39,6 +41,39 @@ test('thumbnail export fits both wide and tall content including padding without
 	assert.equal(getPreviewScale(0, 0), 1)
 	assert.equal(getPreviewScale(Number.POSITIVE_INFINITY, 100), null)
 	assert.equal(getPreviewScale(-1, 100), null)
+})
+
+test('text bounds are measured after its font has loaded', async (context) => {
+	const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window')
+	Object.defineProperty(globalThis, 'window', { configurable: true, value: { location: { origin: 'http://localhost:5173' } } })
+	context.after(() => {
+		if (previousWindow) Object.defineProperty(globalThis, 'window', previousWindow)
+		else Reflect.deleteProperty(globalThis, 'window')
+	})
+	const shape = { id: 'shape:text-preview', type: 'text' }
+	let fontReady = false
+	let exportedScale = 0
+	const editor = {
+		getCurrentPageId: () => preview.pageId,
+		getCurrentPageShapes: () => [shape],
+		getShapePageBounds: () => {
+			assert.equal(fontReady, true, 'capture should wait for the text face before measuring')
+			return { x: 0, y: 0, maxX: 928, maxY: 200 }
+		},
+		fonts: {
+			getShapeFontFaces: () => [],
+			loadRequiredFontsForCurrentPage: async () => { fontReady = true },
+		},
+		getColorMode: () => 'dark',
+		toImage: async (_shapes: unknown, options: TLImageExportOptions) => {
+			exportedScale = options.scale ?? 0
+			return { blob: preview.blob, width: 480, height: 116 }
+		},
+	} as unknown as Editor
+
+	const result = await captureBoardPreview(editor, preview.roomId)
+	assert.equal(exportedScale, 0.5)
+	assert.equal(result?.width, 480)
 })
 
 test('thumbnail background and shape palette follow the current editor theme without changing content', async (context) => {
@@ -56,7 +91,7 @@ test('thumbnail background and shape palette follow the current editor theme wit
 		getCurrentPageId: () => preview.pageId,
 		getCurrentPageShapes: () => shapes,
 		getShapePageBounds: () => ({ x: 0, y: 0, maxX: 100, maxY: 100 }),
-		fonts: { getShapeFontFaces: () => [] },
+		fonts: { getShapeFontFaces: () => [], loadRequiredFontsForCurrentPage: async () => {} },
 		getColorMode: () => darkMode ? 'dark' : 'light',
 		toImage: async (exportedShapes: unknown, options: TLImageExportOptions) => {
 			assert.equal(exportedShapes, shapes)

@@ -37,6 +37,9 @@ export async function captureBoardPreview(editor: Editor, roomId: string, fontUr
 	const shapes = editor.getCurrentPageShapes()
 	if (shapes.length === 0) return null
 	if (!canExportLocally(editor, shapes, window.location.origin, fontUrls)) return undefined
+	// Text geometry depends on the loaded face. Measure only after it is ready;
+	// otherwise an early capture can persist a 16 px-wide fallback rectangle.
+	await editor.fonts.loadRequiredFontsForCurrentPage()
 	const bounds = shapes.map((shape) => editor.getShapePageBounds(shape)).filter((box) => box !== undefined)
 	if (bounds.length === 0) return undefined
 	const left = Math.min(...bounds.map((box) => box.x))
