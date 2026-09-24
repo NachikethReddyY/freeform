@@ -1,6 +1,7 @@
 import {
 	createBindingId,
 	createShapeId,
+	startEditingShapeWithRichText,
 	type Editor,
 	type TLGeoShape,
 	type TLShapeId,
@@ -105,6 +106,24 @@ function revealConnectedNode(editor: Editor, nodeId: TLShapeId) {
 	}
 }
 
+function focusConnectedNodeLabel(editor: Editor, nodeId: TLShapeId) {
+	let attempts = 0
+	const focusWhenMounted = () => {
+		if (editor.getEditingShapeId() !== nodeId) return
+		const textEditor = editor.getRichTextEditor()
+		const input = textEditor?.view.dom
+		if (!textEditor || !input?.isConnected || textEditor.isDestroyed) {
+			if (++attempts < 5) editor.timers.setTimeout(focusWhenMounted, 40)
+			return
+		}
+		if (input.ownerDocument.activeElement !== input) {
+			input.focus()
+			textEditor.commands.focus('end')
+		}
+	}
+	editor.timers.setTimeout(focusWhenMounted, 0)
+}
+
 export function addConnectedNode(editor: Editor, direction: ConnectedNodeDirection): ConnectedNodeResult | null {
 	const source = getConnectedNodeSource(editor)
 	if (!source || !canAddConnectedNode(editor)) return null
@@ -155,6 +174,7 @@ export function addConnectedNode(editor: Editor, direction: ConnectedNodeDirecti
 		if (!editor.getShape(nodeId) || !editor.getShape(arrowId) || !editor.getBinding(startBindingId) || !editor.getBinding(endBindingId)) {
 			throw new Error('Could not add the complete connection.')
 		}
+		startEditingShapeWithRichText(editor, nodeId)
 	} catch (cause) {
 		editor.bailToMark(mark)
 		throw cause
@@ -162,5 +182,7 @@ export function addConnectedNode(editor: Editor, direction: ConnectedNodeDirecti
 
 	// Pan only the distance needed to reveal a node created near the viewport edge.
 	revealConnectedNode(editor, nodeId)
+	// TipTap mounts after this click; hand focus to its actual contenteditable once ready.
+	focusConnectedNodeLabel(editor, nodeId)
 	return { nodeId, arrowId }
 }

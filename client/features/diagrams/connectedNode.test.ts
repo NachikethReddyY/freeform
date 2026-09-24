@@ -31,6 +31,7 @@ class TestElement {
 	setAttribute() {}
 	appendChild(child: TestElement) { return child }
 	remove() {}
+	focus() {}
 	addEventListener() {}
 	removeEventListener() {}
 	getBoundingClientRect() { return { x: 0, y: 0, width: 1080, height: 720, top: 0, left: 0, right: 1080, bottom: 720 } }
@@ -50,6 +51,7 @@ Object.assign(globalThis, {
 	window: {
 		document: documentRef, devicePixelRatio: 1,
 		requestAnimationFrame: () => 0, cancelAnimationFrame() {},
+		setTimeout: globalThis.setTimeout, clearTimeout: globalThis.clearTimeout,
 		addEventListener() {}, removeEventListener() {},
 	},
 	requestAnimationFrame: () => 0,
@@ -131,6 +133,63 @@ test('one undo removes both new shapes and bindings and restores source selectio
 	} finally { editor.dispose() }
 })
 
+test('new connected rectangle enters native label editing and one undo still removes the connection', () => {
+	const editor = new TestEditor()
+	try {
+		const source = rectangle(editor)
+		editor.select(source.id)
+		const result = addConnectedNode(editor, 'right')!
+		assert.equal(editor.getEditingShapeId(), result.nodeId)
+		assert.equal(editor.isIn('select.editing_shape'), true)
+		editor.undo()
+		assert.equal(editor.getShape(result.nodeId), undefined)
+		assert.equal(editor.getShape(result.arrowId), undefined)
+		assert.deepEqual(editor.getSelectedShapeIds(), [source.id])
+	} finally { editor.dispose() }
+})
+
+test('focuses the new native rich-text editor when TipTap mounts after creation', async () => {
+	const editor = new TestEditor()
+	try {
+		const source = rectangle(editor)
+		editor.select(source.id)
+		const result = addConnectedNode(editor, 'right')!
+		const focusCalls: string[] = []
+		const dom = {
+			isConnected: true,
+			ownerDocument: { activeElement: null as unknown },
+			focus() { focusCalls.push('dom'); this.ownerDocument.activeElement = this },
+		}
+		await new Promise((resolve) => setTimeout(resolve, 55))
+		editor.setRichTextEditor({
+			isDestroyed: false,
+			view: { dom },
+			commands: { focus(position: string) { focusCalls.push(position); return true } },
+		} as unknown as NonNullable<ReturnType<Editor['getRichTextEditor']>>)
+		await new Promise((resolve) => setTimeout(resolve, 100))
+		assert.deepEqual(focusCalls, ['dom', 'end'])
+		assert.equal(editor.getEditingShapeId(), result.nodeId)
+	} finally { editor.dispose() }
+})
+
+test('late editor mount does not steal focus after label editing ends', async () => {
+	const editor = new TestEditor()
+	try {
+		const source = rectangle(editor)
+		editor.select(source.id)
+		addConnectedNode(editor, 'right')
+		editor.setEditingShape(null)
+		let focused = false
+		editor.setRichTextEditor({
+			isDestroyed: false,
+			view: { dom: { isConnected: true, ownerDocument: { activeElement: null }, focus() { focused = true } } },
+			commands: { focus() { focused = true; return true } },
+		} as unknown as NonNullable<ReturnType<Editor['getRichTextEditor']>>)
+		await new Promise((resolve) => setTimeout(resolve, 60))
+		assert.equal(focused, false)
+	} finally { editor.dispose() }
+})
+
 test('placement uses a nearby free lane before hopping past an occupied row', () => {
 	const editor = new TestEditor()
 	try {
@@ -158,8 +217,13 @@ test('placement is finite at negative page coordinates and brings an offscreen n
 		const bounds = editor.getShapePageBounds(up.nodeId)!
 		assert.ok(Number.isFinite(bounds.x) && Number.isFinite(bounds.y))
 		assert.ok(bounds.maxY < editor.getShapePageBounds(source.id)!.y)
+		editor.setEditingShape(null)
+		editor.setCurrentTool('select.idle')
 		const edge = rectangle(editor, 970, 300)
 		editor.select(edge.id)
+		assert.equal(editor.isIn('select.idle'), true)
+		assert.deepEqual(editor.getSelectedShapeIds(), [edge.id])
+		assert.equal(canAddConnectedNode(editor), true)
 		const zoomBefore = editor.getZoomLevel()
 		const result = addConnectedNode(editor, 'right')!
 		assert.ok(editor.getViewportPageBounds().contains(editor.getShapePageBounds(result.nodeId)!))

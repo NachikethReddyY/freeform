@@ -90,7 +90,7 @@ test('five distinct starters insert editable native shapes and live bindings nea
 			const result = insertStarter(editor, starter.id)
 			assert.ok(result.shapeIds.length >= 5, starter.id)
 			assert.ok(result.bindingIds.length >= 2, starter.id)
-			assert.deepEqual(new Set(editor.getSelectedShapeIds()), new Set(result.shapeIds))
+			assert.deepEqual(new Set(editor.getSelectedShapeIds()), new Set(result.shapeIds.filter((id) => editor.getShape(id)?.opacity !== 0)))
 			for (const id of result.shapeIds) {
 				const shape = editor.getShape(id)
 				assert.ok(shape, `${starter.id}: ${id}`)
@@ -160,6 +160,34 @@ test('sequence starter keeps each lifeline attached and captions clear of stroke
 		assert.equal(sequence.edges.find((edge) => edge.id === id)?.label, `${caption}\n`,
 			`${caption} should sit above its message stroke`)
 	}
+})
+
+test('sequence guide anchors stay hidden and lifelines use dashed headless arrows', () => {
+	const sequence = STARTERS.find(({ id }) => id === 'sequence')!.diagram
+	const editor = new TestEditor()
+	try {
+		const { shapeIds } = insertStarter(editor, 'sequence')
+		const shapes = shapeIds.map((id) => editor.getShape(id)!)
+		const anchors = sequence.nodes.filter(({ id }) => id.includes('Request') || id.includes('Query')
+			|| id.includes('Result') || id.includes('Response') || id.endsWith('End'))
+		assert.equal(anchors.length, 11)
+		assert.ok(anchors.every(({ role }) => role === 'anchor'))
+		assert.equal(shapes.filter((shape) => shape.type === 'geo' && shape.opacity === 0).length, anchors.length)
+		assert.ok(editor.getSelectedShapeIds().every((id) => editor.getShape(id)?.opacity !== 0),
+			'invisible binding anchors must not show selection handles on insertion')
+		assert.equal(editor.getSelectedShapeIds().length, shapes.length - anchors.length)
+		for (const participant of ['client', 'service', 'database']) {
+			const lifeline = sequence.edges.find(({ id }) => id === `${participant}Line`)
+			assert.equal(lifeline?.style, 'lifeline')
+			const line = shapes.find((shape) => shape.type === 'arrow' && shape.props.richText
+				&& shape.id.endsWith(`edge-${participant}Line`))
+			assert.ok(line && line.type === 'arrow')
+			assert.equal(line.props.dash, 'dashed')
+			assert.equal(line.props.arrowheadEnd, 'none')
+		}
+		assert.ok(shapes.filter((shape) => shape.type === 'arrow' && shape.props.arrowheadEnd === 'arrow').length >= 4,
+			'message arrows should retain arrowheads')
+	} finally { editor.dispose() }
 })
 
 test('a personal block retains selected native content, live bindings, and never changes source shapes', () => {

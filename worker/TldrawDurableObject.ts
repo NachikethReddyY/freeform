@@ -1,6 +1,5 @@
 import {
 	DurableObjectSqliteSyncWrapper,
-	type SessionStateSnapshot,
 	SQLiteSyncStorage,
 	TLSocketRoom,
 } from '@tldraw/sync-core'
@@ -15,6 +14,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { AutoRouter, error, IRequest } from 'itty-router'
 import { PageIdSchema } from '../shared/diagram'
 import { DiagramProposalQueue, DiagramRequestError, diagramErrorResponse } from './diagramProposals'
+import { endCurrentSocketSession, getSocketAttachment, recoverSocketSessions, saveConnectedSession, type SocketAttachment } from './socketRecovery'
 
 // add custom shapes and bindings here if needed:
 // The client registers this custom geo through GeoShapeUtil.configure; the sync schema needs the same value.
@@ -23,16 +23,6 @@ const schema = createTLSchema({
 	shapes: { ...defaultShapeSchemas },
 	// bindings: { ...defaultBindingSchemas },
 })
-
-interface SocketAttachment {
-	sessionId: string
-	snapshot: SessionStateSnapshot | null
-}
-
-function getAttachment(ws: WebSocket): SocketAttachment | null {
-	const attachment = ws.deserializeAttachment() as SocketAttachment | null
-	return attachment?.sessionId ? attachment : null
-}
 
 function extractRecordText(value: unknown, depth = 0): string {
 	if (!value || typeof value !== 'object' || depth > 12) return ''
@@ -53,6 +43,8 @@ export class TldrawDurableObject extends DurableObject {
 	private room: TLSocketRoom<TLRecord, void> | null = null
 	/** Map sessionId → ws so onSessionSnapshot can serialize to the right socket. */
 	private readonly sessionIdToWs = new Map<string, WebSocket>()
+	/** Sockets accepted by this instance have not completed their first handshake yet. */
+	private readonly newlyAccepted = new WeakSet<WebSocket>()
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env)
@@ -83,15 +75,14 @@ export class TldrawDurableObject extends DurableObject {
 			})
 
 			// Resume any sessions that survived hibernation
-			for (const ws of this.ctx.getWebSockets()) {
-				const attachment = getAttachment(ws)
-				if (!attachment?.snapshot) continue
-				this.room.handleSocketResume({
+			recoverSocketSessions(this.ctx.getWebSockets(), this.newlyAccepted, (ws, attachment) => {
+				this.room!.handleSocketResume({
 					sessionId: attachment.sessionId,
 					socket: ws,
 					snapshot: attachment.snapshot,
 				})
-			}
+				this.sessionIdToWs.set(attachment.sessionId, ws)
+			})
 		}
 		return this.room
 	}
@@ -158,6 +149,7 @@ export class TldrawDurableObject extends DurableObject {
 		const { 0: clientWebSocket, 1: serverWebSocket } = new WebSocketPair()
 		// Use hibernation API instead of serverWebSocket.accept()
 		this.ctx.acceptWebSocket(serverWebSocket)
+		this.newlyAccepted.add(serverWebSocket)
 
 		// Store sessionId in attachment immediately so we can identify this socket
 		// after hibernation, before the connect handshake completes.
@@ -165,8 +157,11 @@ export class TldrawDurableObject extends DurableObject {
 		serverWebSocket.serializeAttachment(attachment)
 
 		// Connect to the room. The first webSocketMessage from the client will
-		// complete the handshake and trigger debounced snapshot storage.
+		// complete the handshake and persist a resumable session attachment.
 		this.getOrCreateRoom().handleSocketConnect({ sessionId, socket: serverWebSocket })
+		// The browser tab reuses sessionId after reload. Route events only from
+		// the newest socket; an old socket may close after this connect succeeds.
+		this.sessionIdToWs.set(sessionId, serverWebSocket)
 
 		return new Response(null, { status: 101, webSocket: clientWebSocket })
 	}
@@ -174,11 +169,17 @@ export class TldrawDurableObject extends DurableObject {
 	// --- WebSocket Hibernation API handlers ---
 
 	override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
-		const attachment = getAttachment(ws)
+		const attachment = getSocketAttachment(ws)
 		if (!attachment) return
 
-		this.sessionIdToWs.set(attachment.sessionId, ws)
-		this.getOrCreateRoom().handleSocketMessage(attachment.sessionId, message)
+		const room = this.getOrCreateRoom()
+		if (this.sessionIdToWs.get(attachment.sessionId) !== ws) return
+		room.handleSocketMessage(attachment.sessionId, message)
+		// The SDK's onSessionSnapshot waits 5 seconds. Workerd may hibernate or
+		// restart before then, leaving an accepted socket with no session to resume.
+		if (!attachment.snapshot && saveConnectedSession(ws, attachment.sessionId, () => room.getSessionSnapshot(attachment.sessionId))) {
+			this.newlyAccepted.delete(ws)
+		}
 	}
 
 	override async webSocketClose(ws: WebSocket) {
@@ -190,24 +191,18 @@ export class TldrawDurableObject extends DurableObject {
 	}
 
 	private handleWebSocketEnd(ws: WebSocket, method: 'handleSocketClose' | 'handleSocketError') {
-		const attachment = getAttachment(ws)
+		const attachment = getSocketAttachment(ws)
 		if (!attachment) return
 
-		this.sessionIdToWs.delete(attachment.sessionId)
-
 		const room = this.getOrCreateRoom()
-
-		// If the DO was hibernating, this session was never re-added to the room
-		// (ctx.getWebSockets() doesn't include the disconnecting socket). Resume it
-		// briefly so the room can broadcast presence removal to other clients.
-		if (attachment.snapshot && !room.getSessionSnapshot(attachment.sessionId)) {
-			room.handleSocketResume({
-				sessionId: attachment.sessionId,
-				socket: ws,
-				snapshot: attachment.snapshot,
-			})
-		}
-
-		room[method](attachment.sessionId)
+		endCurrentSocketSession(ws, this.sessionIdToWs, (sessionId) => {
+			// The closing socket is excluded from getWebSockets() after hibernation.
+			// Resume only its own session, and never replace a newer socket with the
+			// same tab ID before processing this close.
+			if (attachment.snapshot && !room.getSessionSnapshot(sessionId)) {
+				room.handleSocketResume({ sessionId, socket: ws, snapshot: attachment.snapshot })
+			}
+			room[method](sessionId)
+		})
 	}
 }

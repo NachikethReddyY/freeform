@@ -35,6 +35,30 @@ test('conversion uses stable distinct IDs and two correct arrow bindings', () =>
 	assert.equal(first.bindings[1].toId, first.shapes[1].id)
 })
 
+test('optional anchor and lifeline roles affect only the intended native shapes', () => {
+	const styled = DiagramSchema.parse({
+		title: 'Guide',
+		nodes: [
+			{ id: 'header', kind: 'rectangle', label: 'Client', x: 0, y: 0 },
+			{ id: 'anchor', kind: 'ellipse', role: 'anchor', label: '', x: 78, y: 200, w: 24, h: 24 },
+		],
+		edges: [{ id: 'line', from: 'header', to: 'anchor', style: 'lifeline' }],
+	})
+	const { shapes, bindings } = createNativeDiagram(styled, 'guide', PageRecordType.createId('one'))
+	assert.equal(shapes[0].opacity, undefined, 'normal nodes keep their existing default opacity')
+	assert.equal(shapes[1].opacity, 0)
+	assert.equal(shapes[2].type, 'arrow')
+	if (shapes[2].type !== 'arrow') throw new Error('Expected arrow')
+	assert.equal(shapes[2].props?.dash, 'dashed')
+	assert.equal(shapes[2].props?.arrowheadEnd, 'none')
+	assert.equal(bindings[0].props?.isExact, false, 'header binding retains its perimeter behavior')
+	assert.equal(bindings[1].props?.isExact, true, 'hidden anchor binding lands on its center')
+	const plainArrow = createNativeDiagram(diagram, 'plain', PageRecordType.createId('one')).shapes[2]
+	assert.equal(plainArrow.type, 'arrow')
+	if (plainArrow.type !== 'arrow') throw new Error('Expected arrow')
+	assert.equal(plainArrow.props?.dash, 'draw')
+})
+
 test('overlapping diagrams move past existing rectangle and text bounds', () => {
 	const rectangle = { x: 0, y: 0, w: 400, h: 200 }
 	const text = { x: 350, y: 100, w: 450, h: 80 }

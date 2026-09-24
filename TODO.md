@@ -1,5 +1,22 @@
 # Freeform tasks
 
+## Faster connected-node labeling — 2026-09-25
+
+- [x] Enter tldraw's native rich-text editing state after a contextual Connect action creates a bound node. Focused tests cover delayed editor mount, canceled editing, guards and one-step undo; the combined diagram suite passes 41/41.
+- [x] Browser-check immediate focus and typing, Escape, native binding, room sync and hard reload. On a disposable Zen page, Connect right focused the new text field; typing `Review` needed no second click. The bound Idea → Review nodes survived reload and reached the room API. App-only proof: `.evidence/ui-review/connected-label-panel-app.jpg`.
+- [ ] Commit/push this checkpoint and update the Postplan HTML with the six saved screenshots.
+
+## Sequence screenshot polish — 2026-09-25
+
+- [x] Remove the visible circular binding anchors and dangling lifeline arrowheads while preserving native bindings. Exclude the 11 invisible anchors from the initial selection overlay. Focused diagram tests pass 41/41.
+- [x] Verify the polished Sequence survives reload. A visible Zen page saved 21 native shapes to the room API and restored its three dashed lifelines and four messages after hard reload; app-only proof: `.evidence/ui-review/sequence-zen-reload-app.jpg`.
+- [ ] Commit/push this checkpoint and update the Postplan HTML with the final screenshot.
+
+## New-page save recovery — 2026-09-25
+
+- [x] Verify visible-browser room sync: Zen saved a new page and its 21 Sequence shapes to the room API, then restored both after hard reload. Safari's automated tab was hidden with zero animation frames and left tldraw writes queued; F15 records this test limitation.
+- [x] Harden hibernated WebSocket session recovery and replaced-socket cleanup; three focused socket tests and the build pass.
+
 ## Diagram editing and selection proof — 2026-09-25
 
 - [x] Test empty and whitespace-only standalone Text edits via click-away in the integrated editor; native cleanup removed both, with only the pre-existing text selected by Select All.

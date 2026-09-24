@@ -6,6 +6,8 @@ export interface Starter { id: StarterId; title: string; diagram: Diagram }
 const node = (id: string, kind: 'rectangle' | 'ellipse' | 'diamond', label: string, x: number, y: number, w = 160, h = 88) =>
 	({ id, kind, label, x, y, w, h, color: 'black' as const })
 const edge = (id: string, from: string, to: string, label = '') => ({ id, from, to, label, color: 'black' as const })
+const anchor = (id: string, x: number, y: number) => ({ ...node(id, 'ellipse', '', x, y, 24, 24), role: 'anchor' as const })
+const lifeline = (id: string, from: string, to: string) => ({ ...edge(id, from, to), style: 'lifeline' as const })
 
 // These are small editable arrangements, not baked images. Every starter uses
 // the same native geo/arrow/binding path as externally proposed diagrams.
@@ -40,22 +42,22 @@ export const STARTERS: readonly Starter[] = [
 				node('client', 'rectangle', 'Client', 0, 0, 160, 66),
 				node('service', 'rectangle', 'Service', 300, 0, 160, 66),
 				node('database', 'rectangle', 'Database', 600, 0, 160, 66),
-				node('clientRequest', 'ellipse', '', 68, 125, 24, 24),
-				node('serviceRequest', 'ellipse', '', 368, 125, 24, 24),
-				node('serviceQuery', 'ellipse', '', 368, 235, 24, 24),
-				node('databaseQuery', 'ellipse', '', 668, 235, 24, 24),
-				node('databaseResult', 'ellipse', '', 668, 345, 24, 24),
-				node('serviceResult', 'ellipse', '', 368, 345, 24, 24),
-				node('serviceResponse', 'ellipse', '', 368, 455, 24, 24),
-				node('clientResponse', 'ellipse', '', 68, 455, 24, 24),
-				node('clientEnd', 'ellipse', '', 68, 565, 24, 24),
-				node('serviceEnd', 'ellipse', '', 368, 565, 24, 24),
-				node('databaseEnd', 'ellipse', '', 668, 565, 24, 24),
+				anchor('clientRequest', 68, 125),
+				anchor('serviceRequest', 368, 125),
+				anchor('serviceQuery', 368, 235),
+				anchor('databaseQuery', 668, 235),
+				anchor('databaseResult', 668, 345),
+				anchor('serviceResult', 368, 345),
+				anchor('serviceResponse', 368, 455),
+				anchor('clientResponse', 68, 455),
+				anchor('clientEnd', 68, 565),
+				anchor('serviceEnd', 368, 565),
+				anchor('databaseEnd', 668, 565),
 			],
 			edges: [
-				edge('clientLine', 'client', 'clientEnd'),
-				edge('serviceLine', 'service', 'serviceEnd'),
-				edge('databaseLine', 'database', 'databaseEnd'),
+				lifeline('clientLine', 'client', 'clientEnd'),
+				lifeline('serviceLine', 'service', 'serviceEnd'),
+				lifeline('databaseLine', 'database', 'databaseEnd'),
 				edge('request', 'clientRequest', 'serviceRequest', 'Request\n'),
 				edge('query', 'serviceQuery', 'databaseQuery', 'Query\n'),
 				edge('result', 'databaseResult', 'serviceResult', 'Result\n'),

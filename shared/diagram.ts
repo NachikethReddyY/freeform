@@ -17,6 +17,7 @@ export const DiagramColorSchema = z.enum(['black', 'grey', 'blue', 'green', 'red
 export const DiagramNodeSchema = z.object({
 	id: ItemIdSchema,
 	kind: z.enum(['rectangle', 'ellipse', 'diamond', 'note']),
+	role: z.enum(['anchor']).optional(),
 	label: z.string().max(500),
 	x: z.number().finite().min(-100_000).max(100_000),
 	y: z.number().finite().min(-100_000).max(100_000),
@@ -31,6 +32,7 @@ export const DiagramEdgeSchema = z.object({
 	to: ItemIdSchema,
 	label: z.string().max(200).default(''),
 	color: DiagramColorSchema.default('black'),
+	style: z.enum(['lifeline']).optional(),
 }).strict()
 
 export const DiagramSchema = z.object({

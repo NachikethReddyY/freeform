@@ -33,7 +33,8 @@ export function createNativeDiagram(input: Diagram, proposalId: string, pageId: 
 	diagram.nodes = diagram.nodes.map(nativeNodeBounds)
 	const nodeIds = new Map(diagram.nodes.map((node) => [node.id, createShapeId(diagramShapeKey(proposalId, node.id, 'node'))]))
 	const shapes: TLShapePartial[] = diagram.nodes.map((node) => {
-		const base = { id: nodeIds.get(node.id)!, parentId: pageId, x: node.x + offset.x, y: node.y + offset.y, meta: { diagramProposal: proposalId } }
+		const base = { id: nodeIds.get(node.id)!, parentId: pageId, x: node.x + offset.x, y: node.y + offset.y,
+			...(node.role === 'anchor' ? { opacity: 0 } : {}), meta: { diagramProposal: proposalId } }
 		if (node.kind === 'note') return { ...base, type: 'note', props: { color: node.color, richText: toRichText(node.label), font: 'draw', size: 'm', scale: node.w / 200 } }
 		return { ...base, type: 'geo', props: { geo: node.kind, w: node.w, h: node.h, richText: toRichText(node.label), color: node.color, fill: 'none', font: 'draw', size: 'm', dash: 'draw' } }
 	})
@@ -43,10 +44,10 @@ export function createNativeDiagram(input: Diagram, proposalId: string, pageId: 
 		const to = diagram.nodes.find((node) => node.id === edge.to)!
 		const id = createShapeId(diagramShapeKey(proposalId, edge.id, 'edge'))
 		const x = from.x + from.w / 2 + offset.x, y = from.y + from.h / 2 + offset.y
-		shapes.push({ id, type: 'arrow', parentId: pageId, x, y, meta: { diagramProposal: proposalId }, props: { color: edge.color, font: 'draw', size: 'm', dash: 'draw', richText: toRichText(edge.label), arrowheadStart: 'none', arrowheadEnd: 'arrow', start: { x: 0, y: 0 }, end: { x: to.x + to.w / 2 + offset.x - x, y: to.y + to.h / 2 + offset.y - y } } })
+		shapes.push({ id, type: 'arrow', parentId: pageId, x, y, meta: { diagramProposal: proposalId }, props: { color: edge.color, font: 'draw', size: 'm', dash: edge.style === 'lifeline' ? 'dashed' : 'draw', richText: toRichText(edge.label), arrowheadStart: 'none', arrowheadEnd: edge.style === 'lifeline' ? 'none' : 'arrow', start: { x: 0, y: 0 }, end: { x: to.x + to.w / 2 + offset.x - x, y: to.y + to.h / 2 + offset.y - y } } })
 		for (const [terminal, target] of [['start', edge.from], ['end', edge.to]] as const) bindings.push({
 			id: createBindingId(`diagram-${proposalId}-${edge.id}-${terminal}`), type: 'arrow', fromId: id, toId: nodeIds.get(target)!,
-			props: { terminal, normalizedAnchor: { x: 0.5, y: 0.5 }, isExact: false, isPrecise: false, snap: 'none' },
+			props: { terminal, normalizedAnchor: { x: 0.5, y: 0.5 }, isExact: diagram.nodes.find((node) => node.id === target)?.role === 'anchor', isPrecise: false, snap: 'none' },
 		})
 	}
 	return { shapes, bindings }
@@ -57,6 +58,7 @@ export function applyNativeDiagram(editor: Editor, diagram: Diagram, proposalId:
 	if (!editor.getPage(pageId) || editor.getCurrentPageId() !== pageId) throw new Error('Return to the target page before applying this proposal.')
 	const { shapes, bindings } = createNativeDiagram(diagram, proposalId, pageId)
 	const ids = shapes.map((shape) => shape.id!)
+	const visibleIds = shapes.filter((shape) => shape.opacity !== 0).map((shape) => shape.id!)
 	const existing = ids.map((id) => editor.getShape(id)).filter((shape) => shape !== undefined)
 	if (existing.length) {
 		if (existing.length === ids.length && existing.every((shape) => shape.meta.diagramProposal === proposalId && editor.getAncestorPageId(shape) === pageId)) return
@@ -84,7 +86,7 @@ export function applyNativeDiagram(editor: Editor, diagram: Diagram, proposalId:
 				const adjustment = nonOverlappingOffset(actual, occupied)
 				if (adjustment.x || adjustment.y) editor.nudgeShapes(ids, adjustment)
 			}
-			editor.select(...ids)
+			editor.select(...visibleIds)
 		})
 		if (ids.some((id) => !editor.getShape(id)) || bindings.some((binding) => !editor.getBinding(binding.id!))) {
 			throw new Error('The complete diagram could not be added. The board may have reached its shape limit.')
