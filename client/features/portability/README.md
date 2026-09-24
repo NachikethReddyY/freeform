@@ -1,0 +1,7 @@
+# Board files
+
+`<BoardFiles editor={editor} />` must stay mounted inside `Tldraw` on every room. The compact trigger can sit in the existing top-right chrome. It uses tldraw 5.4.2's native `serializeTldrawJson`, `parseTldrawJsonFile`, and `editor.toImage`, keeping pages, shapes, bindings, and assets in the JSON document. The download uses `.json` so macOS and Zen's file picker can select a same-format round trip; `.tldr` files from tldraw are also accepted by the parser.
+
+Import validates before creating a new local board, stages the original JSON in IndexedDB, navigates to the new UUID room, and hydrates only if its document is blank. It never loads a snapshot into the source room. Embedded image/video data URLs are passed to tldraw's existing file handler, which sanitizes SVG and uploads through the room's configured asset store before any document records are loaded. If validation or upload fails, the staged file remains available for retry and the destination stays blank. The accepted maximum is 25 MB per JSON file and 10 MB per embedded media asset.
+
+The installed serializer tries to embed external media but retains the original source URL when it cannot fetch it. Such linked media works after import only if that URL remains reachable. Image export covers the current page or selected shapes; the native JSON covers the full document. PNG uses the native renderer; SVG inherits the browser and SDK's font/media limitations.

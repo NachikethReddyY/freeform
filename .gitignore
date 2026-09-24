@@ -1,0 +1,13 @@
+/*/node_modules
+node_modules
+.yarn/
+.wrangler/
+dist/
+.dev.vars*
+.env
+.env.*
+.local-backups/
+.evidence/
+.codex/
+.DS_Store
+arch.png

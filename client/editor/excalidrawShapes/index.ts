@@ -1,0 +1,6 @@
+export { FreeformColorPicker } from './FreeformColorPicker'
+export { applyCustomColor, applyNativeColor, getSelectedColorShapes } from './actions'
+export { getCustomColor, normalizeHexColor, supportsCustomColor } from './colors'
+export { freeformColorShapeUtils } from './shapeUtils'
+export { CustomColorDefaults } from './CustomColorDefaults'
+export { getDefaultCustomColor, setDefaultCustomColor } from './defaultColorState'

@@ -1,0 +1,19 @@
+.freeform-diagram-library { border-bottom: 1px solid var(--gray-dark, #42424b); padding-bottom: 12px; margin-bottom: 12px; }
+.freeform-diagram-library-heading { display: flex; align-items: center; justify-content: space-between; min-height: 24px; font-size: 12px; font-weight: 600; color: var(--text, #eee); }
+.freeform-diagram-library-heading--blocks { margin-top: 10px; }
+.freeform-diagram-starters { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.wboard-diagrams .freeform-diagram-starters button { display: grid; justify-items: center; align-content: center; gap: 3px; box-sizing: border-box; padding: 6px 1px; min-width: 0; min-height: 51px; color: var(--text, #eee); background: var(--background, #242429); border: 1px solid var(--gray-dark, #42424b); border-radius: 7px; cursor: pointer; }
+.freeform-diagram-starters button:hover:enabled, .freeform-diagram-icon-button:hover:enabled { background: var(--gray-light, #35353d); }
+.freeform-diagram-starters button:disabled, .freeform-diagram-icon-button:disabled { opacity: .4; cursor: default; }
+.freeform-diagram-starters button span { font-size: 10px; line-height: 1; white-space: nowrap; }
+.wboard-diagrams .freeform-diagram-icon-button { display: grid; place-items: center; box-sizing: border-box; flex: none; width: 27px; min-width: 27px; height: 27px; min-height: 27px; padding: 0; color: var(--text, #eee); background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.freeform-diagram-icon-button[data-armed="true"] { color: #ff8181; background: rgb(255 80 80 / 12%); }
+.freeform-diagram-save { display: flex; align-items: center; gap: 4px; margin: 4px 0 7px; }
+.freeform-diagram-save input { min-width: 0; flex: 1; height: 29px; padding: 3px 6px; color: var(--text, #eee); background: var(--background, #242429); border: 1px solid var(--gray-dark, #42424b); border-radius: 5px; font: inherit; }
+.freeform-diagram-save button[type="submit"] { height: 29px; min-height: 29px; padding: 2px 7px; }
+.freeform-diagram-blocks { max-height: 172px; overflow-y: auto; }
+.freeform-diagram-block { display: flex; align-items: center; box-sizing: border-box; gap: 6px; width: 100%; min-width: 0; min-height: 31px; color: var(--text, #eee); }
+.freeform-diagram-block > svg { flex: none; opacity: .65; }
+.freeform-diagram-block > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.freeform-diagram-library-error { margin: 5px 0 0; font-size: 11px; color: #ff9090; overflow-wrap: anywhere; }
+.freeform-diagram-library :focus-visible { outline: 2px solid var(--focus, #3978dd); outline-offset: 2px; }

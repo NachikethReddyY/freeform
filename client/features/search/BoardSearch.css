@@ -1,0 +1,27 @@
+.freeform-board-search { position: fixed; top: 8px; right: 96px; z-index: 335; color: var(--tl-color-text); font: 12px 'Geist Sans', sans-serif; pointer-events: all; }
+.freeform-board-search button, .freeform-board-search input { font: inherit; }
+.freeform-board-search button { cursor: pointer; }
+.freeform-board-search button:focus-visible, .freeform-board-search input:focus-visible { outline: 2px solid var(--tl-color-focus); outline-offset: 1px; }
+.freeform-board-search svg { display: block; width: 18px; height: 18px; flex: none; }
+.freeform-board-search__trigger { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--tl-color-text); }
+.freeform-board-search__trigger:hover, .freeform-board-search__trigger[aria-expanded='true'] { background: var(--tl-color-muted-1); }
+.freeform-board-search__panel { position: absolute; top: 41px; right: 0; width: min(328px, calc(100vw - 24px)); overflow: hidden; border: 1px solid var(--tl-color-divider); border-radius: 9px; background: var(--tl-color-panel); box-shadow: var(--tl-shadow-3); }
+.freeform-board-search__header { display: flex; align-items: center; justify-content: space-between; height: 37px; padding: 0 8px 0 12px; }
+.freeform-board-search__header strong { font-size: 12px; font-weight: 600; }
+.freeform-board-search__icon { display: grid; place-items: center; width: 27px; height: 27px; flex: none; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--tl-color-text-2); }
+.freeform-board-search__icon:hover { background: var(--tl-color-muted-1); color: var(--tl-color-text); }
+.freeform-board-search__icon svg { width: 15px; height: 15px; }
+.freeform-board-search__input-wrap { display: flex; align-items: center; gap: 7px; min-height: 33px; margin: 0 9px 8px; padding: 0 7px; border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text-3); }
+.freeform-board-search__input-wrap:focus-within { border-color: var(--tl-color-focus); }
+.freeform-board-search__input-wrap > svg { width: 15px; height: 15px; }
+.freeform-board-search__input-wrap input { min-width: 0; width: 100%; flex: 1; border: 0; outline: 0; color: var(--tl-color-text); background: transparent; font-size: 12px; }
+.freeform-board-search__input-wrap input:focus-visible { outline: 0; }
+.freeform-board-search__input-wrap input::placeholder { color: var(--tl-color-text-3); }
+.freeform-board-search__count, .freeform-board-search__empty { margin: 0; padding: 0 12px 10px; color: var(--tl-color-text-3); font-size: 11px; }
+.freeform-board-search__results { max-height: min(420px, calc(100vh - 165px)); margin: 0; padding: 0 5px 5px; overflow-y: auto; list-style: none; }
+.freeform-board-search__result { display: block; width: 100%; padding: 7px 8px; border: 0; border-radius: 5px; background: transparent; color: var(--tl-color-text); text-align: left; }
+.freeform-board-search__result:hover, .freeform-board-search__result:focus-visible, .freeform-board-search__result[data-active='true'] { background: var(--tl-color-muted-1); }
+.freeform-board-search__snippet { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12px; }
+.freeform-board-search__meta { display: block; overflow: hidden; margin-top: 3px; color: var(--tl-color-text-3); white-space: nowrap; text-overflow: ellipsis; font-size: 10px; }
+@media (max-width: 1100px) { .freeform-board-search__panel { top: 94px; } }
+@media (max-width: 480px) { .freeform-board-search { right: 88px; } .freeform-board-search__panel { position: fixed; top: 102px; left: 8px; right: 8px; width: auto; } }

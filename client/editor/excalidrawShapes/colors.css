@@ -1,0 +1,11 @@
+.freeform-color-palette { width: fit-content; }
+.freeform-color-palette > [data-testid='style.color'] { display: contents; }
+.freeform-custom-color-swatch__color { width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(#ef4444, #facc15, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444); box-shadow: inset 0 0 0 1px #0002; }
+.freeform-custom-color-swatch[aria-pressed='true'] .freeform-custom-color-swatch__color { outline: 1.5px solid currentColor; outline-offset: 3px; }
+.freeform-custom-color-popover { display: grid; grid-template-columns: 34px 112px; align-items: center; gap: 8px; padding: 10px; color: var(--tl-color-text); }
+.freeform-custom-color-popover input { min-width: 0; height: 32px; border: 1px solid var(--tl-color-divider); border-radius: 5px; color: inherit; background: var(--tl-color-low); font-size: 12px; }
+.freeform-custom-color-popover input[type='color'] { width: 34px; padding: 2px; cursor: pointer; }
+.freeform-custom-color-popover input:not([type='color']) { width: 100%; padding: 0 6px; font-family: ui-monospace, monospace; }
+.freeform-custom-color-popover :disabled { opacity: .45; cursor: default; }
+.freeform-custom-color-popover :focus-visible { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }
+.freeform-custom-color__error { grid-column: 1 / -1; max-width: 160px; margin: 0; font: 12px/1.4 sans-serif; }

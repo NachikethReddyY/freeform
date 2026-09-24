@@ -1,0 +1,17 @@
+.freeform-command-palette {
+	width: min(440px, calc(100vw - 32px)); max-height: min(540px, calc(100dvh - 80px)); box-sizing: border-box;
+	margin: 12vh auto auto; padding: 12px; overflow: hidden; border: 1px solid var(--color-divider, #ddd); border-radius: 8px;
+	color: var(--color-text, #222); background: var(--color-panel, #fff); font: 13px/1.4 system-ui, sans-serif;
+	box-shadow: 0 8px 32px #0002; pointer-events: auto;
+}
+.freeform-command-palette::backdrop { background: #0002; }
+.freeform-command-palette header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.freeform-command-palette h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.freeform-command-palette header button { color: inherit; background: none; border: 1px solid var(--color-divider, #ddd); border-radius: 4px; padding: 3px 6px; font: inherit; cursor: pointer; }
+.freeform-command-palette input { width: 100%; box-sizing: border-box; padding: 9px 10px; color: inherit; background: var(--color-background, #f9f9f9); border: 1px solid var(--color-divider, #ddd); border-radius: 5px; font: inherit; }
+.freeform-command-palette :focus-visible { outline: 2px solid var(--color-selected, #3978dd); outline-offset: 2px; }
+.freeform-command-palette ul { list-style: none; padding: 0; margin: 10px 0 0; max-height: min(360px, calc(100dvh - 250px)); overflow-y: auto; }
+.freeform-command-palette li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 10px; border-radius: 4px; cursor: pointer; }
+.freeform-command-palette li[aria-selected="true"] { background: var(--color-muted-2, #e9eef5); }
+.freeform-command-palette p { margin: 12px 8px; }
+.freeform-command-palette .tlui-kbd { opacity: .65; }

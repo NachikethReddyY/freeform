@@ -1,0 +1,15 @@
+.freeform-stroke-controls { display: grid; gap: 3px; padding: 3px 0 4px; }
+.freeform-stroke-control { border: 0; margin: 0; padding: 0; min-width: 0; }
+.freeform-stroke-control legend { padding: 0; margin-bottom: 3px; color: var(--tl-color-text); font: 600 12px/1.3 'Excalifont', sans-serif; }
+.freeform-stroke-control__choices { display: flex; gap: 5px; }
+.freeform-stroke-control__choices button {
+	display: grid; place-items: center; width: 33px; height: 31px; flex: none;
+	border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text); cursor: pointer;
+}
+.freeform-stroke-control__choices button:hover { background: var(--tl-color-muted-1); }
+.freeform-stroke-control__choices button[aria-pressed='true'] { background: var(--tl-color-muted-1); box-shadow: inset 0 0 0 1.5px var(--tl-color-selected); }
+.freeform-stroke-control__choices button:focus-visible { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }
+.freeform-stroke-control__choices svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-stroke-control:first-child button:nth-child(2) svg { stroke-width: 3; }
+.freeform-stroke-control:first-child button:nth-child(3) svg { stroke-width: 5; }
+.freeform-stroke-controls[aria-disabled='true'] button { opacity: .5; cursor: default; }

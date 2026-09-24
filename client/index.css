@@ -1,0 +1,315 @@
+@import url('tldraw/tldraw.css');
+@import url('excalifont/style.css');
+@import url('@fontsource/geist-sans/latin-400.css');
+@import url('@fontsource/geist-sans/latin-600.css');
+
+body {
+	font-family: 'Excalifont', sans-serif;
+	overscroll-behavior: none;
+}
+
+.RoomWrapper .tl-container {
+	font-family: 'Excalifont', sans-serif;
+}
+
+/* Excalifont has no bold file. Thicken bold marks with its own glyphs; the
+   text shadow also survives tldraw's SVG foreignObject style serialization. */
+.tl-rich-text strong,
+.tl-rich-text b {
+	text-shadow: 1px 0 0 currentColor, -1px 0 0 currentColor, 0 1px 0 currentColor, 0 -1px 0 currentColor;
+}
+
+.RoomWrapper {
+	--background: white;
+	--text: hsl(0, 0%, 20%);
+	--gray-light: #f5f5f5;
+	--gray-dark: #e5e5e5;
+	--black-transparent-lighter: rgba(0, 0, 0, 0.15);
+	--black-transparent-light: rgba(0, 0, 0, 0.4);
+	--black-transparent-dark: rgba(0, 0, 0, 0.6);
+	--black-transparent-darker: rgba(0, 0, 0, 0.7);
+	--focus: hsl(217, 89%, 61%);
+	--whiteboard: hsl(240, 5%, 96%);
+	color-scheme: light;
+}
+
+:root:has(.tl-theme__dark) .RoomWrapper {
+	--background: black;
+	--text: hsl(0, 9%, 94%);
+	--gray-light: #333;
+	--gray-dark: #444;
+	--black-transparent-lighter: rgba(255, 255, 255, 0.15);
+	--black-transparent-light: rgba(255, 255, 255, 0.4);
+	--black-transparent-dark: rgba(255, 255, 255, 0.6);
+	--black-transparent-darker: rgba(255, 255, 255, 0.7);
+	--focus: hsl(217, 89%, 61%);
+	--whiteboard: hsl(240, 5%, 6.5%);
+	color-scheme: dark;
+}
+
+.RoomWrapper {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	inset: 0px;
+}
+
+.RoomWrapper-header {
+	display: flex;
+	flex-direction: row;
+	justify-content: flex-start;
+	align-items: center;
+	padding: 7px 16px;
+	gap: 14px;
+	min-height: 52px;
+	background: #24242a;
+	border-bottom: 1px solid #3b3b43;
+	color: #f2f2f5;
+	font-size: 14px;
+}
+
+.RoomWrapper-brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 18px;
+	white-space: nowrap;
+}
+
+.RoomWrapper-brand img { width: 28px; height: 28px; }
+.RoomWrapper-room { color: #aaaab3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 32vw; }
+.RoomWrapper-commands { margin-left: auto; }
+.RoomWrapper-commands, .RoomWrapper-copy {
+	font: inherit;
+	background: #33333b;
+	color: #f2f2f5;
+	border: 1px solid #55555f;
+	border-radius: 6px;
+	padding: 5px 9px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.RoomWrapper-commands kbd { font: 11px/1.2 ui-monospace, monospace; color: #c3c3cc; margin-left: 6px; }
+.RoomWrapper-header button:focus-visible,
+.freeform-panel-tabs button:focus-visible,
+.freeform-shortcuts-button:focus-visible { outline: 2px solid #a6a0f4; outline-offset: 2px; }
+
+.RoomWrapper-copy {
+	position: relative;
+}
+
+.RoomWrapper-copy:has(.RoomWrapper-copied) {
+	color: transparent;
+}
+
+.RoomWrapper-copied {
+	color: var(--text);
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.RoomWrapper-copy:hover {
+	background: #41414a;
+}
+
+.RoomWrapper-content {
+	position: relative;
+	flex: 1;
+	min-height: 0;
+	display: flex;
+}
+
+.RoomWrapper-style { position: relative; width: 292px; flex: none; background: #24242a; border-right: 1px solid #3f3f47; }
+.RoomWrapper-editor { position: relative; flex: 1; min-width: 0; }
+.RoomWrapper-content:has(.tl-container[data-freeform-presentation='true']) .RoomWrapper-style { display: none; }
+
+.freeform-top-tools { display: flex; align-items: center; gap: 8px; width: min(760px, calc(100% - 16px)); pointer-events: all; }
+.freeform-top-tools .tlui-main-toolbar--horizontal { padding: 0; min-width: 0; }
+.freeform-top-tools .tlui-main-toolbar__inner { max-width: 100%; }
+.freeform-shortcuts-button {
+	flex: none;
+	border: 1px solid var(--tl-color-divider);
+	background: var(--tl-color-panel);
+	color: var(--tl-color-text);
+	border-radius: 6px;
+	padding: 6px 8px;
+	font: 12px/1.3 inherit;
+	cursor: pointer;
+}
+.freeform-shortcuts-button kbd { font: 11px ui-monospace, monospace; margin-left: 3px; }
+
+.freeform-left-shell { position: relative; height: 100%; pointer-events: none; }
+.freeform-left-panel {
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	background: var(--tl-color-panel);
+	border: 1px solid var(--tl-color-divider);
+	border-radius: 10px;
+	color: var(--tl-color-text);
+	pointer-events: all;
+}
+.freeform-left-shell[data-open='false'] .freeform-left-panel { bottom: auto; }
+.freeform-panel-tabs { display: flex; align-items: center; gap: 2px; padding: 10px; border-bottom: 1px solid #42424a; }
+.freeform-panel-tabs button { flex: 1; border: 0; border-radius: 5px; padding: 7px 4px; color: #bebec8; background: transparent; font: 13px/1.2 inherit; cursor: pointer; }
+.freeform-panel-tabs button.is-active { color: #fff; background: #454257; }
+.freeform-panel-tabs .freeform-panel-toggle { flex: none; width: 28px; font-size: 20px; line-height: 1; }
+.freeform-panel-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; overscroll-behavior: contain; }
+.freeform-panel-body .tlui-style-panel,
+.freeform-panel-body .tlui-style-panel__wrapper { width: 100%; max-width: none; margin: 0; background: transparent; box-shadow: none; overflow: visible; }
+.freeform-panel-body .tlui-style-panel__section { padding-left: 0; padding-right: 0; }
+.freeform-panel-body .tlui-style-panel__section:not(:empty) { border-bottom: 1px solid var(--tl-color-divider); }
+.freeform-panel-body .tlui-style-panel__section:last-child { border-bottom: 0; }
+.freeform-panel-body:has(.tlui-style-panel:empty)::after { content: 'Select a shape to edit its style.'; display: block; color: var(--tl-color-text-3); padding: 8px 2px; }
+.freeform-style-group { padding: 10px 0 15px; border-bottom: 1px solid var(--tl-color-divider); }
+.freeform-style-group:first-child { padding-top: 0; }
+.freeform-style-group:last-child { border-bottom: 0; }
+.freeform-style-group:has(> h3:only-child) { display: none; }
+.freeform-style-group h3 { color: var(--tl-color-text); font: 600 14px/1.3 'Excalifont', sans-serif; margin: 0 0 9px; }
+.freeform-style-group .tlui-style-panel__subheading { color: var(--tl-color-text-3); }
+.freeform-action-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.freeform-action-row button { border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text); padding: 6px 9px; font: inherit; cursor: pointer; }
+.freeform-action-row button:disabled { opacity: .45; cursor: default; }
+.freeform-panel-body .wboard-diagrams {
+	--background: var(--tl-color-panel);
+	--text: var(--tl-color-text);
+	--gray-light: var(--tl-color-low);
+	--gray-dark: var(--tl-color-divider);
+	--focus: var(--tl-color-focus);
+	padding: 0;
+	font-family: 'Excalifont', sans-serif;
+}
+.freeform-panel-body .wboard-diagrams button,
+.freeform-panel-body .wboard-diagrams textarea { color: var(--tl-color-text); }
+.freeform-panel-body .wboard-diagrams-preview { background: var(--tl-color-low); }
+.freeform-panel-body .wboard-diagrams-preview rect,
+.freeform-panel-body .wboard-diagrams-preview ellipse,
+.freeform-panel-body .wboard-diagrams-preview polygon { fill: var(--tl-color-panel); }
+
+.RoomWrapper-content .tlui-navigation-panel { left: 0; }
+.RoomWrapper .tlui-page-menu__trigger,
+.RoomWrapper .tlui-zoom-menu__button { font-weight: 700; }
+
+/* The native canvas fills the viewport. The controls sit over it without reserving a sidebar. */
+.RoomWrapper-content { display: block; }
+.RoomWrapper-editor { position: absolute; inset: 0; width: 100%; }
+.RoomWrapper-style { position: absolute; top: 62px; left: 12px; width: 236px; max-height: calc(100% - 80px); z-index: 301; background: transparent; border: 0; pointer-events: none; }
+.RoomWrapper-content:has(.tl-container[data-freeform-presentation='true']) .RoomWrapper-style { display: none; }
+.freeform-left-shell { height: auto; position: relative; }
+.freeform-left-shell[data-panel='diagrams'] { width: 310px; }
+.freeform-left-panel { position: relative; top: auto; left: auto; bottom: auto; width: 100%; max-height: calc(100vh - 80px); border: 1px solid var(--tl-color-divider); border-radius: 10px; box-shadow: var(--tl-shadow-3); }
+.freeform-panel-dismiss { position: absolute; top: 6px; right: 6px; z-index: 2; border: 0; border-radius: 4px; background: transparent; color: var(--tl-color-text-3); font-size: 18px; cursor: pointer; }
+.freeform-panel-tabs { padding: 6px; }
+.freeform-panel-tabs button { padding: 6px 3px; }
+.freeform-panel-body { padding: 7px 10px; }
+.freeform-style-group { padding: 5px 0 6px; }
+.freeform-style-group h3 { font-size: 12px; margin-bottom: 5px; }
+.freeform-action-row button { padding: 4px 7px; font-size: 12px; }
+.freeform-action-row button:has(svg) { display: grid; place-items: center; width: 30px; height: 30px; padding: 5px; }
+.freeform-action-row button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-style-group:has(> h3:only-child) { display: none; }
+.freeform-style-group--shape { padding: 2px 0 0; }
+.freeform-style-group--shape:empty { display: none; }
+.freeform-style-group--shape .tlui-style-panel__double-select-picker { padding-left: 0; }
+.freeform-left-panel .freeform-color-palette.tlui-grid { width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.freeform-left-panel .freeform-color-palette .tlui-button { width: 38px; height: 34px; margin: 0; }
+.freeform-left-panel .freeform-style-group:has([data-testid^='style.fill']) .tlui-toolbar { flex-wrap: wrap; gap: 1px; }
+.freeform-left-panel .freeform-style-group:has([data-testid^='style.fill']) .tlui-button { width: 34px; height: 32px; }
+.freeform-left-panel .freeform-style-group:has([data-testid='style.fill']) .tlui-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); width: 100%; }
+.freeform-left-panel .freeform-style-group:has([data-testid='style.fill']) .tlui-grid > * { margin: 0; }
+.freeform-left-panel .tlui-button[data-isactive='true'] { background: var(--tl-color-muted-1) !important; color: var(--tl-color-text) !important; box-shadow: inset 0 0 0 1.5px var(--tl-color-selected); border-radius: 5px; }
+.freeform-left-panel .tlui-button[data-isactive='true'] svg { color: inherit; }
+.freeform-left-panel .tlui-style-panel__section .tlui-button { min-width: 30px; min-height: 30px; }
+
+.freeform-control-line { display: flex; align-items: center; width: fit-content; height: 40px; position: relative; z-index: 320; background: var(--tl-color-low); border-radius: 0 0 8px 0; }
+.freeform-board-identity { position: relative; top: 0; left: auto; z-index: 320; display: flex; align-items: center; gap: 6px; height: 40px; max-width: 250px; padding: 0 4px; color: var(--tl-color-text); background: transparent; border: 0; border-radius: 0; box-shadow: none; pointer-events: all; white-space: nowrap; }
+.freeform-dashboard-link, .freeform-diagrams-entry { display: flex; align-items: center; justify-content: center; gap: 5px; flex: none; height: 30px; padding: 5px 6px; border: 0; border-radius: 5px; color: var(--tl-color-text-1); background: transparent; font: 600 12px 'Excalifont', sans-serif; cursor: pointer; }
+.freeform-dashboard-link:hover, .freeform-diagrams-entry:hover { background: var(--tl-color-muted-1); }
+.freeform-dashboard-link svg, .freeform-diagrams-entry svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linejoin: round; }
+.freeform-board-name { max-width: 170px; overflow: hidden; text-overflow: ellipsis; border: 0; background: transparent; color: var(--tl-color-text); font: 600 13px 'Geist Sans', sans-serif; white-space: nowrap; cursor: text; }
+.freeform-board-name-input { width: 165px; padding: 4px; border: 0; border-bottom: 1px solid var(--tl-color-focus); border-radius: 0; outline: 0; background: transparent; color: var(--tl-color-text); font: 600 13px 'Geist Sans', sans-serif; }
+.freeform-dashboard-link { width: 30px; padding: 5px; }
+.freeform-page-separator { color: var(--tl-color-text-3); font: 15px 'Excalifont', sans-serif; padding: 0 3px; }
+.freeform-diagrams-entry { width: 36px; height: 34px; padding: 6px; border-radius: 6px; background: transparent; }
+.freeform-board-list { min-width: 0; }
+.freeform-board-list > summary { display: flex; align-items: center; gap: 5px; max-width: 90px; overflow: hidden; text-overflow: ellipsis; cursor: pointer; list-style: none; font-size: 12px; color: #d0d0d7; }
+.freeform-board-list > summary::-webkit-details-marker { display: none; }
+.freeform-board-popover { position: absolute; top: 42px; left: 0; width: 280px; max-height: min(420px, calc(100vh - 95px)); overflow: auto; padding: 10px; background: #24242a; border: 1px solid #484851; border-radius: 8px; box-shadow: 0 12px 32px #0008; }
+.freeform-board-popover > strong { display: block; margin: 2px 5px 8px; font-size: 13px; }
+.freeform-board-items { display: grid; gap: 3px; max-height: 240px; overflow: auto; }
+.freeform-board-items button { display: flex; justify-content: space-between; text-align: left; gap: 8px; width: 100%; padding: 8px; color: #eeeef2; background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
+.freeform-board-items button[aria-current='page'] { background: #414052; }
+.freeform-board-items button span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.freeform-board-items small { display: block; color: #a9a9b4; font: 10px ui-monospace, monospace; }
+.freeform-board-operations { display: flex; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid #494951; }
+.freeform-board-operations button, .freeform-board-popover form button { padding: 5px 7px; color: #eeeef2; background: #393942; border: 1px solid #56565f; border-radius: 5px; cursor: pointer; }
+.freeform-board-popover form { display: flex; gap: 5px; margin-top: 9px; }
+.freeform-board-popover form input { min-width: 0; flex: 1; padding: 5px; background: #33333b; color: #fff; border: 1px solid #666670; border-radius: 5px; }
+
+.freeform-top-tools { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); width: 540px; max-width: calc(100vw - 24px); z-index: 310; }
+.freeform-top-tools .tlui-main-toolbar { width: 100%; }
+.freeform-top-tools .tlui-main-toolbar__inner { width: fit-content; margin: 0 auto; }
+.freeform-top-tools .tlui-main-toolbar__left { width: fit-content; display: flex; align-items: center; background: var(--tl-color-panel); border-radius: var(--tl-radius-4); box-shadow: var(--tl-shadow-2); }
+.freeform-top-tools .tlui-main-toolbar__extras { position: static; height: auto; top: auto; display: flex; align-items: center; align-self: center; }
+.freeform-top-tools .tlui-main-toolbar__lock-button { position: static; flex: none; width: 38px; height: 38px; }
+.freeform-top-tools .tlui-main-toolbar__tools { background: transparent; box-shadow: none; }
+.freeform-top-tools .tlui-main-toolbar__overflow .tlui-button__icon {
+	-webkit-mask: none !important; mask: none !important;
+	width: 8px; height: 8px; margin-top: -3px;
+	background: transparent; border-right: 1.7px solid currentColor; border-bottom: 1.7px solid currentColor;
+	transform: rotate(45deg);
+}
+.freeform-top-tools .tlui-main-toolbar__overflow[aria-expanded='true'] .tlui-button__icon,
+.freeform-top-tools .tlui-main-toolbar__overflow[data-state='open'] .tlui-button__icon { transform: rotate(225deg); margin-top: 3px; }
+
+.freeform-bottom-controls { position: absolute; left: 10px; bottom: 10px; z-index: 310; display: flex; align-items: center; gap: 8px; pointer-events: all; }
+.freeform-zoom { position: relative; display: flex; align-items: center; gap: 1px; height: 34px; padding: 2px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; color: var(--tl-color-text); box-shadow: var(--tl-shadow-2); }
+.freeform-zoom button, .freeform-zoom summary { min-width: 28px; padding: 4px 6px; color: inherit; background: transparent; border: 0; border-radius: 4px; font: 600 13px 'Excalifont', sans-serif; text-align: center; cursor: pointer; }
+.freeform-zoom button:hover, .freeform-zoom summary:hover { background: var(--tl-color-muted-1); }
+.freeform-zoom-presets > summary { min-width: 58px; list-style: none; }
+.freeform-zoom-presets > summary::-webkit-details-marker { display: none; }
+.freeform-zoom-options { position: absolute; bottom: 39px; left: 20px; display: grid; width: 126px; padding: 5px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; box-shadow: var(--tl-shadow-3); }
+.freeform-zoom-options button { text-align: left; }
+.freeform-bottom-controls .freeform-presentation__start { position: static; height: 34px; padding: 4px 10px; }
+.freeform-bottom-controls .freeform-presentation__start { width: 34px; padding: 4px; }
+.freeform-history-controls { display: flex; gap: 1px; height: 34px; padding: 2px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; box-shadow: var(--tl-shadow-2); }
+.freeform-history-controls button { display: grid; place-items: center; width: 30px; height: 28px; border: 0; border-radius: 4px; background: transparent; color: var(--tl-color-text); cursor: pointer; }
+.freeform-history-controls button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-history-controls button:hover { background: var(--tl-color-muted-1); }
+.freeform-history-controls button:disabled { color: var(--tl-color-text-disabled); opacity: .5; cursor: default; }
+.freeform-bottom-controls .freeform-presentation__start { background: var(--tl-color-panel); color: var(--tl-color-text); border-color: var(--tl-color-divider); box-shadow: var(--tl-shadow-2); }
+
+@media (max-width: 1400px) {
+	.freeform-board-name { max-width: 85px; }
+	.freeform-board-name-input { width: 85px; }
+}
+
+@media (max-width: 1100px) {
+	.freeform-top-tools { width: 390px; }
+	.freeform-board-name { max-width: 68px; }
+	.freeform-board-name-input { width: 68px; }
+}
+
+.freeform-presentation__start { position: absolute; top: 8px; right: 8px; z-index: 310; border: 1px solid #55555f; background: #303039; color: #eee; border-radius: 6px; padding: 7px 12px; cursor: pointer; }
+.freeform-presentation__start:disabled { opacity: .5; cursor: default; }
+.freeform-presentation__shield { display: flex; justify-content: center; align-items: flex-end; padding-bottom: 24px; }
+.freeform-presentation { display: flex; gap: 10px; align-items: center; background: #24242a; color: #fff; border: 1px solid #4d4d56; border-radius: 8px; padding: 10px; box-shadow: 0 10px 30px #0005; }
+.freeform-presentation button { background: #393941; color: inherit; border: 1px solid #5a5a65; border-radius: 5px; padding: 6px 10px; cursor: pointer; }
+.freeform-presentation button:disabled { opacity: .5; cursor: default; }
+.tl-container[data-freeform-presentation='true'] .tlui-layout { visibility: hidden; }
+
+@media (max-width: 760px) {
+	.RoomWrapper-style { top: 112px; left: 8px; width: min(230px, calc(100vw - 16px)); max-height: calc(100% - 175px); }
+	.freeform-left-panel { max-height: calc(100vh - 175px); }
+	.freeform-left-shell[data-panel='diagrams'] { width: min(300px, calc(100vw - 16px)); }
+	.freeform-top-tools { top: 59px; left: 8px; right: auto; transform: none; width: min(440px, calc(100vw - 16px)); max-width: none; }
+	.freeform-control-line { max-width: 100vw; }
+	.freeform-board-name { max-width: 95px; }
+}

@@ -1,0 +1,37 @@
+.freeform-board-files { position: fixed; top: 8px; right: 54px; z-index: 325; pointer-events: all; font-family: 'Geist Sans', sans-serif; }
+.freeform-board-files button { font: inherit; cursor: pointer; }
+.freeform-board-files button:disabled { cursor: not-allowed; opacity: .45; }
+.freeform-board-files button:focus-visible { outline: 2px solid var(--tl-color-selected); outline-offset: 2px; }
+.freeform-board-files-trigger { display: grid; place-items: center; width: 34px; height: 34px; padding: 7px; border: 0; border-radius: 6px; color: var(--tl-color-text); background: transparent; }
+.freeform-board-files-trigger:hover, .freeform-board-files-trigger[aria-expanded='true'] { background: var(--tl-color-muted-1); }
+.freeform-board-files svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-board-files-panel { position: absolute; top: 39px; right: 0; width: min(248px, calc(100vw - 20px)); box-sizing: border-box; padding: 9px; border: 1px solid var(--tl-color-divider); border-radius: 8px; color: var(--tl-color-text); background: var(--tl-color-panel); box-shadow: var(--tl-shadow-3); font-size: 12px; }
+.freeform-board-files-panel header { display: flex; align-items: center; justify-content: space-between; height: 27px; padding: 0 4px 4px; }
+.freeform-board-files-panel header strong { font-size: 13px; font-weight: 600; }
+.freeform-board-files-panel header button { width: 25px; height: 25px; border: 0; border-radius: 5px; background: transparent; color: var(--tl-color-text-2); font-size: 20px; line-height: 1; }
+.freeform-board-files-panel header button:hover { background: var(--tl-color-muted-1); }
+.freeform-board-files-action { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 35px; padding: 7px 9px; text-align: left; border: 0; border-radius: 5px; color: var(--tl-color-text); background: transparent; }
+.freeform-board-files-action:hover { background: var(--tl-color-muted-1); }
+.freeform-board-files-action small { color: var(--tl-color-text-3); font-size: 11px; }
+.freeform-board-files-divider { height: 1px; margin: 7px 0; background: var(--tl-color-divider); }
+.freeform-board-files-scope { display: flex; gap: 2px; padding: 2px; border-radius: 6px; background: var(--tl-color-muted-1); }
+.freeform-board-files-scope button { flex: 1; min-height: 28px; padding: 4px; border: 0; border-radius: 4px; background: transparent; color: var(--tl-color-text-2); }
+.freeform-board-files-scope button[aria-pressed='true'] { background: var(--tl-color-panel); color: var(--tl-color-text); box-shadow: var(--tl-shadow-1); }
+.freeform-board-files-formats { display: flex; gap: 6px; margin-top: 7px; }
+.freeform-board-files-formats button { flex: 1; min-height: 31px; border: 1px solid var(--tl-color-divider); border-radius: 5px; color: var(--tl-color-text); background: transparent; font-weight: 600; }
+.freeform-board-files-formats button:not(:disabled):hover { background: var(--tl-color-muted-1); }
+.freeform-board-files-hint { margin: 10px 2px 1px; color: var(--tl-color-text-3); font-size: 10px; line-height: 1.35; }
+.freeform-board-files-status { margin: 8px 2px 1px; color: var(--tl-color-text); line-height: 1.35; }
+.freeform-board-files-status[role='alert'] { color: var(--tl-color-danger); }
+.freeform-board-files-retry { min-height: 30px; margin-top: 7px; padding: 5px 9px; border: 1px solid var(--tl-color-divider); border-radius: 5px; color: var(--tl-color-text); background: transparent; }
+.freeform-board-files-retry:hover { background: var(--tl-color-muted-1); }
+.freeform-board-files-preview { display: grid; gap: 6px; padding: 6px 4px 2px; line-height: 1.35; }
+.freeform-board-files-preview > strong { font-size: 12px; font-weight: 600; }
+.freeform-board-files-preview > span { color: var(--tl-color-text-2); }
+.freeform-board-files-preview-actions { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.freeform-board-files-preview-actions button { min-height: 29px; padding: 4px 8px; border: 1px solid var(--tl-color-divider); border-radius: 5px; color: var(--tl-color-text); background: var(--tl-color-panel); }
+.freeform-board-files-preview-actions button:last-child { color: var(--tl-color-selected); border-color: var(--tl-color-selected); }
+.freeform-board-files-preview-actions button:hover { background: var(--tl-color-muted-1); }
+.freeform-board-files-details { margin: 6px 2px 1px; color: var(--tl-color-text-2); font-size: 11px; line-height: 1.35; }
+.freeform-board-files-details summary { cursor: pointer; }
+.freeform-board-files-details p { margin: 5px 0 0; overflow-wrap: anywhere; }

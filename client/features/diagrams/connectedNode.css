@@ -1,0 +1,13 @@
+.freeform-connected-node { border: 0; min-width: 0; margin: 0; padding: 3px 0 4px; }
+.freeform-connected-node legend { padding: 0; margin-bottom: 3px; color: var(--tl-color-text); font: 600 12px/1.3 'Excalifont', sans-serif; }
+.freeform-connected-node__choices { display: flex; gap: 5px; }
+.freeform-connected-node__choices button {
+	display: grid; place-items: center; width: 33px; height: 31px; flex: none;
+	border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text); cursor: pointer;
+}
+.freeform-connected-node__choices button:hover:enabled { background: var(--tl-color-muted-1); }
+.freeform-connected-node__choices button:active:enabled { background: var(--tl-color-muted-2); }
+.freeform-connected-node__choices button:focus-visible { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }
+.freeform-connected-node__choices button:disabled { opacity: .45; cursor: default; }
+.freeform-connected-node__choices svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-connected-node__error { margin: 5px 0 0; color: var(--tl-color-text); font: 12px/1.3 sans-serif; }
