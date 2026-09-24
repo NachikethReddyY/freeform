@@ -6,7 +6,7 @@
 - [x] Verify Solid Cartoonist has a visibly rougher outline and that the selected state and geometry persist after hard reload.
 - [x] Resolve Sloppiness with Dashed/Dotted rectangle strokes: Cartoonist now changes the outline while preserving the dash pattern. The selected-state screenshot, dotted hard reload and native dotted SVG export passed.
 - [x] Extend the same behavior to dashed/dotted native straight lines and preserve Sharp corners in the rough rectangle renderer. The visible line bends stayed selectable at two points after hard reload; the selected Sharp dotted rectangle and native SVG export retained square corners and the dot pattern. Focused stroke tests pass 10/10.
-- [ ] Update the issue log and screenshot-rich HTML report, run focused checks, commit/push, then verify the Postplan update.
+- [x] Update the issue log and eight-image HTML report, run focused checks, commit/push `f7aaad4`, then verify Postplan version 7. Public URL returned HTTP 200 and the raw HTML SHA-256 matched the 506,863-byte local file.
 
 ## Sequence move regression — 2026-09-25
 
