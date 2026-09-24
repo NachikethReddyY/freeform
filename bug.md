@@ -14,7 +14,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 | Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, text-only/shape/fallback preview; two-board bulk move, Copy link, collection-rename cancel, and 720px selected/menu layout | Larger library and multi-browser behavior unverified |
 | Diagram insertion/retry | Fixed in focused proof | Actual tldraw fixture and local API; placement, bindings, early ack, retry, undo/page guards | No live model call; latest shell not covered by fixture |
 | Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; geometry Stroke/Background preset, custom, transparent, reload, SVG and PNG checks | Notes/frames/highlights/media and label colors remain outside the implementation |
-| New diagram controls | Named flows pass | Connected-node browser insertion; one starter and personal-block save/reload/reinsert | Five starters have focused native-shape tests; browser proof is narrower than all templates/directions |
+| New diagram controls | Named flows pass | Connected-node browser insertion; Flowchart auto-layout, panel-clear fit and Sequence starter insertion/reload; personal-block save/reload/reinsert | Five starters and 8 layout cases have focused native-shape tests; unrelated-shape collision has test proof only, and other templates/directions need browser proof |
 | Slides | Named flows pass | Reorder, undo, reload, fullscreen/Escape, rename cancel | No speaker notes, transitions or live audience sharing |
 | Board files | Browser matrix passes | Native `.json`/`.tldr` new-room imports, two pages, embedded PNG, reload, page/selection PNG/SVG, opacity and draw-font SVG | Scale is fixed to 1; external linked media and other font families remain unverified |
 | Excalidraw interchange | Bounded fixture passes | Three elements ready, one image skipped, imported board reload, parsed three-element/one-binding export | Unsupported elements/styles remain reported omissions, not full parity |
@@ -123,7 +123,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - [ ] Two populated room URLs need direct switching/reload isolation proof in the integrated app.
 - [ ] General two-way draw/move/upload collaboration needs proof beyond the verified two-client custom-color path.
 - [ ] All advertised shortcuts need focused checks. A sampled Board Files matrix now covers `.tldr` picker acceptance, two pages, an embedded PNG, page/selection PNG/SVG, opacity and draw-font SVG; external linked media and other fonts remain open.
-- [ ] Blank-text click-away cleanup beyond the verified Escape path remains unverified.
+- [x] Blank-text click-away cleanup passed in the integrated editor: clicking away from a newly created empty Text shape, and from a Text shape containing three spaces, left only the pre-existing text selected by Select All (1 of 1). Native tldraw cleanup handles both editing exits.
 - [ ] An edit followed by immediate dashboard navigation may leave the last thumbnail until the board is reopened; the capture is debounced. Confirm desired behavior before calling this a data-loss defect.
 
 ### B14 — Opening a board in Trash showed its raw ID as the editor title
@@ -212,10 +212,18 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### F05 — Empty text remained after abandoning entry
 
-- [x] **Escape cleanup verified.**
-- **Check:** create an empty Text edit, type nothing, press Escape.
-- **Result:** root observed native cleanup remove the empty text.
-- **Limit:** click-away, whitespace-only input, and every editing exit path were not claimed as tested.
+- [x] **Escape, click-away, and whitespace-only cleanup verified.**
+- **Check:** create empty Text edits; press Escape for one, click away from one, and enter three spaces before clicking away from another. Select All after both click-away cases.
+- **Result:** root observed native cleanup remove each abandoned Text shape. After the two click-away cases, Select All reported only the pre-existing text (1 of 1). Native `TextShapeUtil.onEditEnd` removes blank standalone text.
+- **Additional selection check:** double-clicking a new rectangle edited its built-in label; clicking away and selecting it reopened the contextual card with one rectangle selected, rather than a second Text shape. The Text tool still intentionally creates a separate standalone shape when clicked over a rectangle. Local evidence: `rectangle-native-text-app.png`.
+- **Limit:** other editing exits were not claimed as tested.
+
+### F13 — Generic flow layout crowded branch labels and could disturb authored sequence lanes
+
+- [x] **Give bound flow branches label room and leave authored small-anchor layouts alone.**
+- **Observed:** the first live Arrange pass shortened the Flowchart's Yes/No branches; both labels were pressed against the target boxes. Arranging the whole Sequence starter collapsed its participant/message lanes.
+- **Fix and proof:** selected connected native geo/note nodes now use wider horizontal spacing. The action is unavailable when selected nodes include small message anchors or are disconnected, which protects the Sequence starter. A browser Flowchart pass showed Yes/No clear of boxes, undo restored its prior positions in one action, and reload retained the arranged geometry. A selected Sequence starter exposed Duplicate/Delete but no Arrange. A later Helium pass moved a selected flow back into view beside the 256px style panel with native arrows attached. Focused tests cover clearance from unrelated shapes, frame backdrops and long-chain viewport fit; these collision/frame cases were not browser-tested. Local app-only evidence: `flow-after-layout-fullscreen-app.jpg`, `flow-arrange-panel-clear-app.jpg`, `sequence-starter-fullscreen-app.jpg`; 36 focused diagram tests and production build passed.
+- **Limit:** the action is a bounded left-to-right flow layout, not an all-purpose UML/sequence/ERD arranger. Large-board interaction performance remains unmeasured.
 
 ### F06 — Top Menu/dashboard/title/Page overlapped at desktop width
 

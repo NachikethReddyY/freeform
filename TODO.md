@@ -1,5 +1,15 @@
 # Freeform tasks
 
+## Diagram editing and selection proof — 2026-09-25
+
+- [x] Test empty and whitespace-only standalone Text edits via click-away in the integrated editor; native cleanup removed both, with only the pre-existing text selected by Select All.
+- [x] Test rectangle double-click text editing and selection in the integrated editor; its built-in label remained part of a single selected rectangle and the contextual card reopened.
+- [x] Add a compact auto-layout action for selected native diagram nodes. The Flowchart browser pass showed wider branch clearance, native bound arrows and labels, a one-step undo, and persistence after reload; focused tests cover graph order, cycles, no-op and unavailable selections.
+- [x] Make the Sequence starter read chronologically across Client, Service and Database lanes with three native bound lifelines and four bound message arrows. Browser insertion/reload passed; Arrange is hidden for its small-anchor authored layout, which the generic flow action would otherwise destroy.
+- [x] Keep selected Arrange nodes clear of unrelated shapes, treat an unselected frame as a backdrop, and fit a long result beside the style panel. Focused tests cover collisions, frame containment and viewport fit; a Helium Arrange pass showed every selected node clear of the 256px panel with its native arrows still attached. Collision with an unrelated shape was not browser-tested.
+- [ ] Measure Arrange on a large board. The code discovers arrows from selected node bindings and traverses the connected selection once; a large-board benchmark and browser interaction remain unverified.
+- [ ] Re-evaluate captured screenshots and add representative proof to the final HTML; rerun focused checks, commit/push a checkpoint, and update the authorized Postplan report.
+
 ## Visual follow-up — 2026-09-25
 
 - [x] Verify native tool-lock position and Q behavior on a lockable tool at desktop and 720px; current CSS places it inside the pill and browser proof passed for Rectangle.

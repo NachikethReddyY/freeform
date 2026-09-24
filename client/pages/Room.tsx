@@ -43,6 +43,7 @@ import { BoardPreviewRecorder } from '../features/boards/BoardPreviewRecorder'
 import { CommandPalette } from '../features/commandPalette/CommandPalette'
 import { DiagramProposalPanel } from '../features/diagrams/DiagramProposalPanel'
 import { ConnectedNodeControls } from '../features/diagrams/connectedNodeControls'
+import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../features/diagrams/layout'
 import { PresentationControls } from '../features/presentation/presentation'
 import { BoardFiles } from '../features/portability/BoardFiles'
 import { BoardSearch } from '../features/search/SearchPanel'
@@ -191,6 +192,7 @@ function FreeformStylePanel() {
 	const editor = useEditor()
 	const actions = useActions()
 	const selected = useValue('freeform selected shapes', () => editor.getSelectedShapes(), [editor])
+	const canArrangeDiagram = useValue('freeform diagram layout availability', () => canLayoutSelectedDiagram(editor), [editor])
 	const tool = useValue('freeform style tool', () => editor.getCurrentToolId(), [editor])
 	const geo = useValue('freeform geo tool', () => editor.getStyleForNextShape(GeoShapeGeoStyle), [editor])
 	const selectedCount = selected.length
@@ -220,6 +222,7 @@ function FreeformStylePanel() {
 			<button disabled={!selectedCount} title="Bring to front" onClick={() => actions['bring-to-front'].onSelect('toolbar')}>⇥</button>
 		</div></StyleGroup>}
 		{selectedCount > 0 && <StyleGroup title="Actions"><div className="freeform-action-row">
+			{canArrangeDiagram && <button type="button" aria-label="Arrange diagram" title="Arrange diagram" onClick={() => layoutSelectedDiagram(editor)}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="7" height="6" rx="1"/><rect x="15" y="3" width="7" height="6" rx="1"/><rect x="15" y="15" width="7" height="6" rx="1"/><path d="M9 6h4m-2-2 2 2-2 2M18.5 9v4m-2-2 2 2 2-2"/></svg></button>}
 			<button aria-label="Duplicate" disabled={!selectedCount} title="Duplicate" onClick={() => actions.duplicate.onSelect('toolbar')}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg></button>
 			<button aria-label="Delete" disabled={!selectedCount} title="Delete" onClick={() => actions.delete.onSelect('toolbar')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 4h4m-8 3 1 13h10l1-13M10 11v5m4-5v5" /></svg></button>
 		</div></StyleGroup>}

@@ -121,6 +121,47 @@ test('flowchart branch arrows leave room for their Yes and No labels', () => {
 	}
 })
 
+test('sequence starter places four messages across participant lanes in time order', () => {
+	const sequence = STARTERS.find(({ id }) => id === 'sequence')!.diagram
+	const nodes = new Map(sequence.nodes.map((node) => [node.id, node]))
+	const rows = [
+		['clientRequest', 'serviceRequest'],
+		['serviceQuery', 'databaseQuery'],
+		['databaseResult', 'serviceResult'],
+		['serviceResponse', 'clientResponse'],
+	] as const
+	let previousY = -Infinity
+	for (const [from, to] of rows) {
+		const source = nodes.get(from)!
+		const target = nodes.get(to)!
+		assert.ok(source && target, `${from} → ${to} needs both message steps`)
+		assert.equal(source.y, target.y, 'a message arrow should run horizontally')
+		assert.ok(source.y > previousY, 'time should flow down the starter')
+		assert.ok(sequence.edges.some((edge) => edge.from === from && edge.to === to), `${from} → ${to} needs a bound arrow`)
+		previousY = source.y
+	}
+	assert.ok(nodes.get('client')!.x < nodes.get('service')!.x)
+	assert.ok(nodes.get('service')!.x < nodes.get('database')!.x)
+})
+
+test('sequence starter keeps each lifeline attached and captions clear of strokes', () => {
+	const sequence = STARTERS.find(({ id }) => id === 'sequence')!.diagram
+	const nodes = new Map(sequence.nodes.map((node) => [node.id, node]))
+	for (const participant of ['client', 'service', 'database'] as const) {
+		const header = nodes.get(participant)!
+		const end = nodes.get(`${participant}End`)!
+		assert.ok(end, `${participant} needs a lifeline end`)
+		assert.equal(header.x + header.w / 2, end.x + end.w / 2, 'lifeline should share the header center')
+		assert.ok(end.y > nodes.get('clientResponse')!.y, 'lifeline should pass the final message')
+		assert.ok(sequence.edges.some((edge) => edge.id === `${participant}Line`
+			&& edge.from === participant && edge.to === `${participant}End`), `${participant} needs a live vertical binding`)
+	}
+	for (const [id, caption] of [['request', 'Request'], ['query', 'Query'], ['result', 'Result'], ['response', 'Response']] as const) {
+		assert.equal(sequence.edges.find((edge) => edge.id === id)?.label, `${caption}\n`,
+			`${caption} should sit above its message stroke`)
+	}
+})
+
 test('a personal block retains selected native content, live bindings, and never changes source shapes', () => {
 	const editor = new TestEditor()
 	const storage = memoryStorage()
