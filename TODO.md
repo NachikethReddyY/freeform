@@ -14,7 +14,7 @@
 - [x] Add bounded `.excalidraw` v2 interchange with conversion/omission reports; browser proof covers fixture preview (three ready, one image skipped), new-board import/reload, and a parsed export with three elements and one binding. No Excalidraw source was copied.
 - [x] Run the integrated build and focused feature suites: boards 19/19, diagrams 26/26, slides 14/14, palette 3/3, combined portability/style/search/routing 25/25, and MCP smoke 10 protocol checks. Dashboard/style browser reviews resolved the observed trashed-board title and contextual Connect-label regressions; remaining gaps are tracked below and in `bug.md`.
 - [x] Capture and evaluate disposable-board/dashboard screenshots at desktop, 720px and a 390px report viewport; four safe app screenshots are embedded in the final HTML.
-- [ ] Commit safe checkpoints, push the authorized GitHub remote, publish a sanitized HTML progress report to Postplan, and verify both external destinations.
+- [x] Commit safe checkpoints, push the authorized GitHub remote, publish a sanitized HTML progress report with four embedded screenshots to Postplan, and verify both external destinations. The public report is https://tjs0vhq7es5c.postplan.dev.
 - [x] Add compact board-content search across pages with result jump/focus; focused tests and a disposable two-page browser pass covered match/no-match, clear/Escape, cross-page selection and camera centering.
 - [x] Resolve screenshot review findings: starter branch labels now clear connectors, slide thumbnails/active row are legible, and the 720px dashboard has clean browser proof.
 - [x] Anchor dashboard card overflow menu to its ellipsis at 720px and desktop; clean browser screenshots cover normal and short-height placement.
