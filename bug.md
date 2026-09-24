@@ -281,7 +281,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - **Old failure:** font-family/asset alias mismatches prevented the native exporter from consistently using the local draw font.
 - **Result:** local draw-font references align; regular and styled text can export using the local WOFF2. Preview capture observed no external font request.
 - **Evidence:** preview capture (local evidence: result.json), regular/bold export loading (local evidence: default-result.json).
-- **Limit:** visible bold weight remains B01; loading the same regular file under a bold alias alone does not fix it.
+- **Follow-up:** loading the same regular file under a bold alias alone did not fix visible weight. The later editor/SVG/selected-PNG and text-only thumbnail pass is recorded under B01 and B14 above.
 
 ### F11 — Preview captures duplicated or stale work could overwrite newer/blank state
 
