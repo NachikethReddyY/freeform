@@ -23,7 +23,7 @@ The dashboard at `/` keeps a list of boards in browser local storage. It migrate
 
 ## Use FreeForm
 
-- The drawing toolbar sits across the top; the contextual **Style** card controls color, fill, stroke, size, opacity, layer order, and sharp or rounded rectangle edges. Select one rectangle to show four **Connect** arrows; each adds an editable rectangle with a bound arrow in that direction.
+- The drawing toolbar sits across the top; the contextual **Style** card controls stroke, independent geometry background color, fill, stroke width/style, size, opacity, layer order, and sharp or rounded rectangle edges. Select one rectangle to show four **Connect** arrows; each adds an editable rectangle with a bound arrow in that direction.
 - Press **Cmd/Ctrl+K** to search native tools and actions. The compact palette shows shortcuts supplied by tldraw.
 - Open **Search board** at the top right to find text and shape, note, or arrow labels across every page; choosing a result switches pages, selects it, and centers the view.
 - Open **Diagrams** for five editable starters (flowchart, mind map, entity relationship, sequence, architecture), personal blocks saved from a selection, and Mermaid flowchart preview/import. A connected local MCP assistant can stage a proposal there; review it and choose **Add to board**. No AI provider or in-app chat is configured.

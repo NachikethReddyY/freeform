@@ -21,6 +21,8 @@ The overrides configure native `geo`, `text`, `draw`, and `line` renderers using
 
 The final multicolor swatch opens a compact popover. Its native color input applies on change; HEX applies with Enter. Escape/outside click discards an unsubmitted HEX draft. The swatch shows the selected custom color, or the drawing default when nothing is selected. Presets clear the default, including keyboard activation of an already-selected preset.
 
+The geometry Background palette below Stroke uses a separate `freeformBackgroundColor` metadata value. Presets and the native custom chooser set a solid fill; Transparent clears it. The preference applies to new geometry drawn in the current editor session. Existing older geo records without the background field retain their linked custom fill until edited; changing their stroke snapshots that visible fill first. SVG and PNG use the same native renderer. Other shape types retain their native fill behavior.
+
 ## Persistence and rendering
 
 The validated payload is stored with each shape:

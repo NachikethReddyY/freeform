@@ -10,6 +10,12 @@ export interface BoardSearchResult {
 	snippet: string
 }
 
+/** Arrow-key movement for the search combobox; -1 means there is no active result. */
+export function nextSearchResultIndex(current: number, count: number, direction: 'up' | 'down'): number {
+	if (count <= 0) return -1
+	return (current + (direction === 'down' ? 1 : -1) + count) % count
+}
+
 function labelOf(editor: Editor, shape: TLShape): string {
 	switch (shape.type) {
 	case 'text':

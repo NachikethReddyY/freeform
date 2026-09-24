@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { Editor, TLPageId, TLShape, TLShapeId } from 'tldraw'
-import { findBoardText, jumpToBoardSearchResult } from './searchIndex'
+import { findBoardText, jumpToBoardSearchResult, nextSearchResultIndex } from './searchIndex'
 
 const richText = (value: string) => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: value }] }] })
 
@@ -72,4 +72,13 @@ test('a stale or removed result does not switch page', () => {
 	byId.delete(hit.shapeId)
 	assert.equal(jumpToBoardSearchResult(editor, hit), false)
 	assert.deepEqual(calls, [])
+})
+
+test('keyboard result navigation wraps and stays empty when there are no results', () => {
+	assert.equal(nextSearchResultIndex(0, 3, 'down'), 1)
+	assert.equal(nextSearchResultIndex(2, 3, 'down'), 0)
+	assert.equal(nextSearchResultIndex(0, 3, 'up'), 2)
+	assert.equal(nextSearchResultIndex(1, 3, 'up'), 0)
+	assert.equal(nextSearchResultIndex(0, 0, 'down'), -1)
+	assert.equal(nextSearchResultIndex(0, 0, 'up'), -1)
 })

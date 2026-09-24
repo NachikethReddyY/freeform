@@ -16,12 +16,25 @@ export function supportsCustomColor(shape: TLShape): shape is CustomColorShape {
 
 /** Keep the native color token valid; the HEX override travels atomically in the same shape record. */
 export function withCustomColor(shape: CustomColorShape, hex: HexColor): TLShape['meta'] {
-	return { ...shape.meta, freeformColor: { version: 1, hex, base: shape.props.color } }
+	return {
+		...shape.meta,
+		freeformColor: { version: 1, hex, base: shape.props.color },
+		// Preserve the old visible fill before splitting stroke and background on a legacy shape.
+		...(shape.type === 'geo' && !Object.hasOwn(shape.meta, 'freeformBackgroundColor')
+			? { freeformBackgroundColor: getCustomColor(shape) ? { version: 1, hex: getCustomColor(shape), mode: 'legacy' } : null }
+			: {}),
+	}
 }
 
 export function withoutCustomColor(shape: TLShape): TLShape['meta'] {
 	// Explicit null also clears the field when tldraw merges partial metadata updates.
-	return { ...shape.meta, freeformColor: null }
+	return {
+		...shape.meta,
+		freeformColor: null,
+		...(shape.type === 'geo' && !Object.hasOwn(shape.meta, 'freeformBackgroundColor')
+			? { freeformBackgroundColor: getCustomColor(shape) ? { version: 1, hex: getCustomColor(shape), mode: 'legacy' } : null }
+			: {}),
+	}
 }
 
 export function getCustomColor(shape: TLShape): HexColor | null {

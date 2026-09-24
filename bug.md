@@ -11,9 +11,9 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 | Bold text | Improved in editor/SVG; export matrix open | Before/after browser screenshots and SVG show heavier bold via a text shadow on the regular Excalifont glyphs | PNG/thumbnail output and other font families need proof |
 | Latest editor layout | Named states pass | 1280px prior check; 1016px selected-card, 720px toolbar, More, existing-shape reopen, action icons and compact card browser checks | Tool lock and remaining mobile/theme combinations remain open |
 | Dashboard hook crash | Fresh workflow matrix passes; cause unresolved | Zen create/open/search/select/rename/move/delete/restore/collection rename/reload transitions without recurrence; 19 board tests | Original failing hook/cause not identified |
-| Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, real/fallback preview; 720px card/menu layout | Bulk move/copy link unverified |
+| Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, real/fallback preview; two-board bulk move, Copy link, collection-rename cancel, and 720px selected/menu layout | Larger library and multi-browser behavior unverified |
 | Diagram insertion/retry | Fixed in focused proof | Actual tldraw fixture and local API; placement, bindings, early ack, retry, undo/page guards | No live model call; latest shell not covered by fixture |
-| Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; five-type fixture | Notes/frames/highlights/media and label colors remain outside the implementation |
+| Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; geometry Stroke/Background preset, custom, transparent, reload, SVG and PNG checks | Notes/frames/highlights/media and label colors remain outside the implementation |
 | New diagram controls | Named flows pass | Connected-node browser insertion; one starter and personal-block save/reload/reinsert | Five starters have focused native-shape tests; browser proof is narrower than all templates/directions |
 | Slides | Named flows pass | Reorder, undo, reload, fullscreen/Escape, rename cancel | No speaker notes, transitions or live audience sharing |
 | Board files | Browser matrix passes | Native `.json`/`.tldr` new-room imports, two pages, embedded PNG, reload, page/selection PNG/SVG, opacity and draw-font SVG | Scale is fixed to 1; external linked media and other font families remain unverified |
@@ -110,7 +110,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### Acceptance gaps that are not established defects
 
-- [ ] Bulk Select/move, Copy link, and collection cancel × need explicit browser checks.
+- [x] Bulk Select/move, Copy link, and collection rename cancel with Escape passed on synthetic boards in Zen at desktop and 720px; two moved boards remain recoverable in Trash.
 - [ ] Two populated room URLs need direct switching/reload isolation proof in the integrated app.
 - [ ] General two-way draw/move/upload collaboration needs proof beyond the verified two-client custom-color path.
 - [ ] All advertised shortcuts need focused checks. A sampled Board Files matrix now covers `.tldr` picker acceptance, two pages, an embedded PNG, page/selection PNG/SVG, opacity and draw-font SVG; external linked media and other fonts remain open.
@@ -136,7 +136,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ### B12 — Requested stroke, sloppiness, and edge controls are incomplete
 
-- [ ] **Provide and verify Stroke color separately from Background color, including selected-state feedback.**
+- [x] **Provide and verify Stroke color separately from Background color for geometry shapes, including selected-state feedback.**
 - [x] **Provide and verify independent stroke width in a selected rectangle.**
 - [x] **Provide and verify Stroke style as its own control.**
 - [ ] **Provide and verify the requested sloppiness behavior.**
@@ -144,7 +144,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - [ ] **Verify switching a selected rounded rectangle back to sharp in the browser.**
 - **Reproduce:** compare the current shape card with the user's latest reference and try to set each property independently.
 - **Requested reference groups:** Stroke, Background, Stroke width, Stroke style, Sloppiness, and Edges. Stroke width must not substitute for the label-size behavior tracked in B11.
-- **Current state:** a rounded-rectangle definition and Edges control are mounted; browser proof covers rounded SVG export and reload. A further disposable-board pass showed thin stroke visibly thinner, dashed/dotted stroke and selected-state feedback, Artist→Cartoonist sloppiness selection, rounded edge visibly rounded, opacity 100→50→100, and shape picker rectangle→ellipse. Sloppiness geometric difference was not independently measured while dotted stroke was active; independent Stroke/Background color remains open.
+- **Current state:** a rounded-rectangle definition and Edges control are mounted; browser proof covers rounded SVG export and reload. A further disposable-board pass showed thin stroke visibly thinner, dashed/dotted stroke and selected-state feedback, Artist→Cartoonist sloppiness selection, rounded edge visibly rounded, opacity 100→50→100, and shape picker rectangle→ellipse. Independent geometry Stroke/Background controls kept blue stroke while coral→amber→custom green fill changed; transparent removed only the fill. Hard reload preserved both colors and the rounded edge; SVG contained both HEX values and selected PNG sampled the custom fill's RGB bytes. Patterned fill stayed selected when the background changed on an existing shape and a newly drawn shape, and remained selected after reload. Prior boards' linked custom fills retain their look when recolored. Sloppiness geometric difference was not independently measured while dotted stroke was active; other shape types and theme/mobile combinations remain open.
 - **Required proof:** each selected option visibly changes supported shapes; selection/resize, persistence, and native export remain consistent.
 - **Owner:** Sol/Luna/root.
 
@@ -158,6 +158,9 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - **Diagram library:** a starter inserted editable native shapes; saving a selection as a personal block, reload, and reinsertion worked. Source: `client/features/diagrams/library/`; reinserted block (local evidence: diagram-library-reinsert.png). Personal blocks live in browser-local storage.
 - **Compact palette and edges:** the 4×3-plus-rainbow palette and rounded rectangle were browser-checked, including rounded SVG and reload. Rounded after reload (local evidence: rounded-palette-reload-zen.png). Bold weight has an editor/SVG workaround with PNG/thumbnail proof pending (B01); rectangle label Size is now browser-verified (B11).
 - **Selected style actions:** on a disposable board, reopening a selected rectangle, thin/dashed/dotted stroke, rounded edge, shape picker, opacity, Duplicate/Delete icons, Text S→XL, bold after Escape, and More dismissal passed browser checks. A contextual AX mismatch after rectangle→ellipse was fixed: Connect buttons now say “Add connected node [direction]” instead of “rectangle”. App-only screenshot (local evidence: style-controls-app-only.png).
+- **Independent geometry color:** a compact Background palette was added below Stroke. Preset, native custom picker, transparent, selected feedback, reload, SVG and PNG were checked on a disposable rounded rectangle. A focused review caught pattern fill being reset and legacy color swatches not reflecting visible fill; both were corrected. Patterned fill remained selected when changing an existing shape's background and when choosing the next rectangle's background, including after reload. The app-only selected-state screenshot is `independent-colors-app.jpg`; `custom-background-reload-app.jpg` shows the custom fill after reload. Additional pattern proof is `pattern-background-preserved.jpg` and `pattern-next-shape-full.jpg`. Ten focused color cases pass. Background choices apply to geometry shapes; arrow, draw and text backgrounds remain outside this slice.
+- **Keyboard board search:** ArrowUp/Down now move the accessible active result and Enter selects/centers after the key event completes. A disposable Helium board also covered Clear, Escape and no-results; five focused search tests pass. App-only screenshot: `search-keyboard-active.jpg`.
+- **Dashboard bulk and 720px:** Zen selected two synthetic boards, moved both to a test collection, copied a board link, and cancelled collection rename with Escape. The 720px selection controls stayed visible without overlap. App-only screenshot: `dashboard-bulk-720.jpg`. The test boards were moved to recoverable Trash.
 
 ## Fixed with focused evidence
 

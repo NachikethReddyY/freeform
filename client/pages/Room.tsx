@@ -35,6 +35,7 @@ import {
 import { boardAssetUrls, boardThemes } from '../editor/fontTheme'
 import { CustomColorDefaults, FreeformColorPicker, freeformColorShapeUtils } from '../editor/excalidrawShapes'
 import { FreeformStrokeControls } from '../editor/excalidrawShapes/FreeformStrokeControls'
+import { FreeformBackgroundPicker } from '../editor/excalidrawShapes/FreeformBackgroundPicker'
 import { FreeformStrokeDefaults } from '../editor/excalidrawShapes/FreeformStrokeDefaults'
 import { isRectangleGeo } from '../editor/excalidrawShapes/roundedRectangle'
 import { useBoardIndex } from '../features/boards/boardIndex'
@@ -200,7 +201,8 @@ function FreeformStylePanel() {
 				: selected.every((shape) => shape.type === 'geo' && isRectangleGeo(shape.props.geo)) ? 'rectangle' : null
 		: tool === 'arrow' || tool === 'line' ? tool : tool === 'geo' && isRectangleGeo(geo) ? 'rectangle' : null
 	return <DefaultStylePanel>
-		<StyleGroup title="Color"><FreeformColorPicker /></StyleGroup>
+		<StyleGroup title={isText ? 'Color' : 'Stroke'}><FreeformColorPicker /></StyleGroup>
+		{!isText && <StyleGroup title="Background"><FreeformBackgroundPicker /></StyleGroup>}
 		{!isText && <StyleGroup title="Fill"><FreeformFillPicker /></StyleGroup>}
 		{strokeKind ? <FreeformStrokeControls kind={strokeKind} /> : !isText && <StyleGroup title="Stroke style"><StylePanelDashPicker /></StyleGroup>}
 		<StyleGroup title={isText ? 'Font size' : 'Size'}><StylePanelSizePicker /></StyleGroup>

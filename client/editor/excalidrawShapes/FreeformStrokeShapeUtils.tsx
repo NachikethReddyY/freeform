@@ -12,7 +12,8 @@ import {
 	type TLGeoShape,
 	type TLLineShape,
 } from 'tldraw'
-import { getCustomColor, getCustomFill } from './colors'
+import { getCustomColor } from './colors'
+import { shapeBackgroundDisplayValues } from './backgroundDisplay'
 import { getSloppiness } from './sloppiness'
 import { isRectangleGeo, ROUNDED_RECTANGLE, roundedRectangleDefinition } from './roundedRectangle'
 
@@ -75,11 +76,10 @@ export class FreeformGeoShapeUtil extends GeoShapeUtil {
 		super(editor)
 		this.options = { ...this.options, getCustomDisplayValues: (_editor, shape, theme, mode) => {
 			const hex = getCustomColor(shape)
-			return hex ? {
-				strokeColor: hex,
-				fillColor: getCustomFill(hex, shape.props.fill, theme.colors[mode].solid, mode),
-				patternFillFallbackColor: getCustomFill(hex, 'solid', theme.colors[mode].solid, mode),
-			} : {}
+			return {
+				...(hex ? { strokeColor: hex } : {}),
+				...shapeBackgroundDisplayValues(shape, theme.colors[mode].solid, mode),
+			}
 		} }
 	}
 

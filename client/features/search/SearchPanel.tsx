@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { Editor } from 'tldraw'
-import { findBoardText, jumpToBoardSearchResult, type BoardSearchResult } from './searchIndex'
+import { findBoardText, jumpToBoardSearchResult, nextSearchResultIndex, type BoardSearchResult } from './searchIndex'
 import './BoardSearch.css'
 
 function Icon({ name }: { name: 'search' | 'close' | 'clear' }) {
@@ -17,6 +17,8 @@ export function BoardSearch({ editor }: { editor: Editor }) {
 	const root = useRef<HTMLDivElement>(null)
 	const input = useRef<HTMLInputElement>(null)
 	const trigger = useRef<HTMLButtonElement>(null)
+	const resultNodes = useRef<Array<HTMLButtonElement | null>>([])
+	const resultListId = useId()
 	const [open, setOpen] = useState(false)
 	const [query, setQuery] = useState('')
 	const [active, setActive] = useState(0)
@@ -24,6 +26,11 @@ export function BoardSearch({ editor }: { editor: Editor }) {
 	const allResults = open ? findBoardText(editor, query, 101) : []
 	const results = allResults.slice(0, 100)
 	const hasMore = allResults.length > 100
+	const activeIndex = results.length ? Math.min(active, results.length - 1) : -1
+
+	useEffect(() => {
+		if (open && activeIndex >= 0) resultNodes.current[activeIndex]?.scrollIntoView({ block: 'nearest' })
+	}, [open, activeIndex, query])
 
 	useEffect(() => {
 		if (!open) return
@@ -51,7 +58,10 @@ export function BoardSearch({ editor }: { editor: Editor }) {
 	}, [editor, open])
 
 	const go = (result: BoardSearchResult) => {
-		if (jumpToBoardSearchResult(editor, result)) setOpen(false)
+		if (jumpToBoardSearchResult(editor, result)) {
+			setOpen(false)
+			requestAnimationFrame(() => trigger.current?.focus())
+		}
 	}
 
 	return <div className="freeform-board-search" ref={root}>
@@ -60,17 +70,26 @@ export function BoardSearch({ editor }: { editor: Editor }) {
 			<header className="freeform-board-search__header"><strong>Search board</strong><button type="button" className="freeform-board-search__icon" title="Close search" aria-label="Close search" onClick={() => { setOpen(false); trigger.current?.focus() }}><Icon name="close" /></button></header>
 			<div className="freeform-board-search__input-wrap">
 				<Icon name="search" />
-				<input ref={input} type="text" aria-label="Search text on all pages" placeholder="Find text on any page" value={query} onChange={(event) => { setQuery(event.target.value); setActive(0) }} onKeyDown={(event) => {
-					if (event.key === 'ArrowDown') { event.preventDefault(); setActive((value) => Math.min(value + 1, results.length - 1)) }
-					if (event.key === 'ArrowUp') { event.preventDefault(); setActive((value) => Math.max(0, value - 1)) }
-					if (event.key === 'Enter' && results.length) { event.preventDefault(); go(results[Math.min(active, results.length - 1)]) }
+				<input ref={input} type="text" role="combobox" aria-label="Search text on all pages" aria-autocomplete="list" aria-controls={results.length ? resultListId : undefined} aria-expanded={results.length > 0} aria-activedescendant={activeIndex >= 0 ? `${resultListId}-${activeIndex}` : undefined} placeholder="Find text on any page" value={query} onChange={(event) => { setQuery(event.target.value); setActive(0) }} onKeyDown={(event) => {
+					if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && results.length) {
+						event.preventDefault()
+						event.stopPropagation()
+						setActive(nextSearchResultIndex(activeIndex, results.length, event.key === 'ArrowDown' ? 'down' : 'up'))
+					}
+					if (event.key === 'Enter' && activeIndex >= 0) {
+						event.preventDefault()
+						event.stopPropagation()
+						const result = results[activeIndex]
+						// Let tldraw finish processing this key before changing page, camera and selection.
+						requestAnimationFrame(() => go(result))
+					}
 				}} />
 				{query && <button type="button" className="freeform-board-search__icon" title="Clear search" aria-label="Clear search" onClick={() => { setQuery(''); setActive(0); input.current?.focus() }}><Icon name="clear" /></button>}
 			</div>
 			{query.trim() ? <>
 				<p className="freeform-board-search__count" role="status">{results.length ? `${results.length}${hasMore ? '+' : ''} ${results.length === 1 && !hasMore ? 'result' : 'results'}` : 'No matching text'}</p>
-				{results.length > 0 && <ol className="freeform-board-search__results">{results.map((result, index) => <li key={result.shapeId}>
-					<button type="button" className="freeform-board-search__result" data-active={active === index} onMouseEnter={() => setActive(index)} onClick={() => go(result)}>
+				{results.length > 0 && <ol id={resultListId} role="listbox" aria-label="Board text results" className="freeform-board-search__results">{results.map((result, index) => <li key={result.shapeId} role="presentation">
+					<button ref={(node) => { resultNodes.current[index] = node }} id={`${resultListId}-${index}`} role="option" aria-selected={activeIndex === index} tabIndex={-1} type="button" className="freeform-board-search__result" data-active={activeIndex === index} onMouseEnter={() => setActive(index)} onClick={() => go(result)}>
 						<span className="freeform-board-search__snippet">{result.snippet}</span>
 						<span className="freeform-board-search__meta">{result.pageName} · {result.kind === 'geo' ? 'shape' : result.kind}</span>
 					</button>

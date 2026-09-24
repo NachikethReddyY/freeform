@@ -9,3 +9,13 @@
 .freeform-custom-color-popover :disabled { opacity: .45; cursor: default; }
 .freeform-custom-color-popover :focus-visible { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }
 .freeform-custom-color__error { grid-column: 1 / -1; max-width: 160px; margin: 0; font: 12px/1.4 sans-serif; }
+.freeform-background-palette { display: grid; grid-template-columns: repeat(4, 38px); gap: 4px 7px; align-items: center; }
+.freeform-background-palette__swatch,
+.freeform-background-palette__custom { position: relative; display: block; width: 28px; height: 28px; padding: 0; border: 1px solid var(--tl-color-divider); border-radius: 6px; cursor: pointer; }
+.freeform-background-palette__swatch[aria-pressed='true'] { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }
+.freeform-background-palette__swatch:disabled { cursor: default; opacity: .45; }
+.freeform-background-palette__none { background: linear-gradient(135deg, transparent 45%, #e45959 46%, #e45959 53%, transparent 54%), #27272d; }
+.freeform-background-palette__custom { border: 0; background: conic-gradient(#ef4444, #facc15, #22c55e, #06b6d4, #6366f1, #d946ef, #ef4444); }
+.freeform-background-palette__custom input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.freeform-background-palette__custom .freeform-background-palette__swatch { width: 18px; height: 18px; margin: 5px; border: 1px solid #fff8; border-radius: 4px; background: #24242a; pointer-events: none; }
+.freeform-background-palette__custom:focus-within { outline: 2px solid var(--tl-color-focus); outline-offset: 2px; }

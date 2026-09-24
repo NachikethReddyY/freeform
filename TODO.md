@@ -1,9 +1,16 @@
 # Freeform tasks
 
+## Follow-up UX verification — 2026-09-25
+
+- [x] Add keyboard navigation and an active result state to board-content search; ArrowUp/Down, Enter selection/centering, Escape, Clear and no-results passed on a disposable board. Five focused search tests pass.
+- [x] Verify dashboard bulk Select → move, Copy link and collection rename cancel in Zen; a two-board move and 720px selected layout passed without source changes. Trash restore behavior remains covered by the prior matrix.
+- [x] Provide compact independent Stroke and Background choices for geometry shapes; preset/custom/transparent states, reload, and SVG/PNG output passed on a disposable board. Pattern fill stayed selected on an existing shape and a future drawn shape after choosing a background, and remained after reload. Ten focused color cases pass. Other shape types and mobile/theme combinations remain open.
+- [x] Rerun focused checks, update the issue log and five-screenshot HTML report, and publish the authorized GitHub/Postplan checkpoints. The 36-case combined suite, board/diagram/slide/palette suites, MCP smoke and production build pass; Postplan v2 rendered with the new evidence.
+
 ## Diagramming and editor UX expansion — 2026-09-24
 
 - [x] Review the idea brief, existing Excalidraw source, installed tldraw SDK, and license boundaries; publish an honest feature map.
-- [ ] Finish compact editor chrome and style controls; 720px toolbar, 1016px selected card, compact color picker, rounded rectangle SVG/reload, and S→XL rectangle label growth have browser proof. A selected-shape browser pass now covers width, dash, sloppiness selection, rounded edge, picker, opacity, icon actions, text size, bold, More and panel reopening. Bold PNG/thumbnail output, independent Stroke/Background color and some theme/mobile combinations remain open.
+- [ ] Finish compact editor chrome and style controls; 720px toolbar, 1016px selected card, compact color picker, rounded rectangle SVG/reload, S→XL rectangle label growth and independent geometry Stroke/Background color have browser proof. A selected-shape pass covers width, dash, sloppiness selection, rounded edge, picker, opacity, icon actions, text size, bold, More and panel reopening. Bold PNG/thumbnail output and some mobile/theme combinations remain open.
 - [x] Add four-direction connected-node creation with native bound arrows; focused tests cover the directions and a disposable-board browser check proves insertion.
 - [x] Add an explicit slide organizer with native frame order; browser proof covers reorder, undo, reload, fullscreen/Escape, and rename cancel.
 - [x] Add native JSON export/import into a new room; browser proof covers `.json` download, new-board import/reload, and invalid import without source mutation.
