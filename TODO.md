@@ -8,7 +8,7 @@
 - [x] Make the Sequence starter read chronologically across Client, Service and Database lanes with three native bound lifelines and four bound message arrows. Browser insertion/reload passed; Arrange is hidden for its small-anchor authored layout, which the generic flow action would otherwise destroy.
 - [x] Keep selected Arrange nodes clear of unrelated shapes, treat an unselected frame as a backdrop, and fit a long result beside the style panel. Focused tests cover collisions, frame containment and viewport fit; a Helium Arrange pass showed every selected node clear of the 256px panel with its native arrows still attached. Collision with an unrelated shape was not browser-tested.
 - [ ] Measure Arrange on a large board. The code discovers arrows from selected node bindings and traverses the connected selection once; a large-board benchmark and browser interaction remain unverified.
-- [ ] Re-evaluate captured screenshots and add representative proof to the final HTML; rerun focused checks, commit/push a checkpoint, and update the authorized Postplan report.
+- [x] Re-evaluate captured screenshots and add representative proof to the final HTML; rerun focused checks, commit/push a checkpoint, and update the authorized Postplan report. Five embedded images passed Safari visual review; remote HTML matched the local file byte-for-byte at Postplan version 4, and GitHub main matched the pushed checkpoint.
 
 ## Visual follow-up — 2026-09-25
 
