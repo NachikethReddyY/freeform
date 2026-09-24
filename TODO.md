@@ -5,7 +5,7 @@
 - [x] Keep every invisible binding anchor in the inserted Sequence selection so dragging the diagram moves the anchors and visible nodes together. A focused movement assertion covers all 21 native shapes.
 - [x] Hide the selected anchor indicators in the FreeForm geo renderer while preserving native binding, selection, and editing behavior. The live selected screenshot has no blue guide circles.
 - [x] Verify a desktop drag and hard reload in Zen; the three lifelines stayed vertical and all four message endpoints remained attached. Saved selected, clean, and reloaded screenshots; the seven-image HTML rendered in Safari. Diagram tests pass 41/41 and the build passes.
-- [ ] Commit and push the follow-up checkpoint, then update and verify the authorized Postplan report.
+- [x] Commit and push follow-up checkpoint `4d68dbd`; Postplan version 6 returned HTTP 200 and its raw HTML SHA-256 matched the local seven-image file.
 
 ## Faster connected-node labeling — 2026-09-25
 
