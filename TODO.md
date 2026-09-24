@@ -1,16 +1,23 @@
 # Freeform tasks
 
+## Sequence move regression — 2026-09-25
+
+- [x] Keep every invisible binding anchor in the inserted Sequence selection so dragging the diagram moves the anchors and visible nodes together. A focused movement assertion covers all 21 native shapes.
+- [x] Hide the selected anchor indicators in the FreeForm geo renderer while preserving native binding, selection, and editing behavior. The live selected screenshot has no blue guide circles.
+- [x] Verify a desktop drag and hard reload in Zen; the three lifelines stayed vertical and all four message endpoints remained attached. Saved selected, clean, and reloaded screenshots; the seven-image HTML rendered in Safari. Diagram tests pass 41/41 and the build passes.
+- [ ] Commit and push the follow-up checkpoint, then update and verify the authorized Postplan report.
+
 ## Faster connected-node labeling — 2026-09-25
 
 - [x] Enter tldraw's native rich-text editing state after a contextual Connect action creates a bound node. Focused tests cover delayed editor mount, canceled editing, guards and one-step undo; the combined diagram suite passes 41/41.
 - [x] Browser-check immediate focus and typing, Escape, native binding, room sync and hard reload. On a disposable Zen page, Connect right focused the new text field; typing `Review` needed no second click. The bound Idea → Review nodes survived reload and reached the room API. App-only proof: `.evidence/ui-review/connected-label-panel-app.jpg`.
-- [ ] Commit/push this checkpoint and update the Postplan HTML with the six saved screenshots.
+- [x] Commit/push checkpoint `52d1d9a` and update the Postplan HTML with six saved screenshots. A seventh movement screenshot and follow-up checkpoint are tracked above.
 
 ## Sequence screenshot polish — 2026-09-25
 
-- [x] Remove the visible circular binding anchors and dangling lifeline arrowheads while preserving native bindings. Exclude the 11 invisible anchors from the initial selection overlay. Focused diagram tests pass 41/41.
+- [x] Remove the visible circular binding anchors and dangling lifeline arrowheads while preserving native bindings. Keep the 11 invisible anchors in the initial selection for whole-diagram movement, and hide their indicators in the renderer. Focused diagram tests pass 41/41.
 - [x] Verify the polished Sequence survives reload. A visible Zen page saved 21 native shapes to the room API and restored its three dashed lifelines and four messages after hard reload; app-only proof: `.evidence/ui-review/sequence-zen-reload-app.jpg`.
-- [ ] Commit/push this checkpoint and update the Postplan HTML with the final screenshot.
+- [x] Commit/push checkpoint `52d1d9a` and update the Postplan HTML with the initial Sequence screenshot. The movement fix and seventh screenshot are tracked above.
 
 ## New-page save recovery — 2026-09-25
 

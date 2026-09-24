@@ -90,7 +90,7 @@ test('five distinct starters insert editable native shapes and live bindings nea
 			const result = insertStarter(editor, starter.id)
 			assert.ok(result.shapeIds.length >= 5, starter.id)
 			assert.ok(result.bindingIds.length >= 2, starter.id)
-			assert.deepEqual(new Set(editor.getSelectedShapeIds()), new Set(result.shapeIds.filter((id) => editor.getShape(id)?.opacity !== 0)))
+			assert.deepEqual(new Set(editor.getSelectedShapeIds()), new Set(result.shapeIds))
 			for (const id of result.shapeIds) {
 				const shape = editor.getShape(id)
 				assert.ok(shape, `${starter.id}: ${id}`)
@@ -173,9 +173,15 @@ test('sequence guide anchors stay hidden and lifelines use dashed headless arrow
 		assert.equal(anchors.length, 11)
 		assert.ok(anchors.every(({ role }) => role === 'anchor'))
 		assert.equal(shapes.filter((shape) => shape.type === 'geo' && shape.opacity === 0).length, anchors.length)
-		assert.ok(editor.getSelectedShapeIds().every((id) => editor.getShape(id)?.opacity !== 0),
-			'invisible binding anchors must not show selection handles on insertion')
-		assert.equal(editor.getSelectedShapeIds().length, shapes.length - anchors.length)
+		assert.deepEqual(new Set(editor.getSelectedShapeIds()), new Set(shapeIds),
+			'invisible binding anchors must stay selected so the whole diagram moves together')
+		const before = new Map(shapes.map((shape) => [shape.id, editor.getShapePageBounds(shape.id)!]))
+		editor.nudgeShapes(editor.getSelectedShapeIds(), { x: 160, y: 40 })
+		for (const id of shapeIds) {
+			const start = before.get(id)!, end = editor.getShapePageBounds(id)!
+			assert.ok(Math.abs(end.x - start.x - 160) < 0.001, `moved ${id} x`)
+			assert.ok(Math.abs(end.y - start.y - 40) < 0.001, `moved ${id} y`)
+		}
 		for (const participant of ['client', 'service', 'database']) {
 			const lifeline = sequence.edges.find(({ id }) => id === `${participant}Line`)
 			assert.equal(lifeline?.style, 'lifeline')

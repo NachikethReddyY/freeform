@@ -229,7 +229,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 - [x] **Keep native bindings while removing visual anchor clutter.**
 - **Observed:** the first three-lane Sequence starter rendered circular 24px binding anchors at message endpoints and arrowheads at the ends of its lifelines. These marks made the example hard to scan.
-- **Fix and proof:** the eleven small bound nodes now render at zero opacity and are omitted from the initial selection overlay; three bound lifelines use dashed strokes without arrowheads. A visible Zen insertion saved 21 native shapes (14 geo including hidden anchors, seven arrows) to the room API. After hard reload, the Client/Service/Database headers, continuous lifelines, and four labeled messages remained clear. App-only screenshot: `.evidence/ui-review/sequence-zen-reload-app.jpg`. Native-shape tests verify the roles/styles and the combined diagram suite passes 41/41.
+- **Fix and proof:** the eleven small bound nodes now render at zero opacity and their selection indicators are hidden; they remain selected so a drag moves the whole diagram. Three bound lifelines use dashed strokes without arrowheads. A visible Zen insertion saved 21 native shapes (14 geo including hidden anchors, seven arrows) to the room API. After hard reload, the Client/Service/Database headers, continuous lifelines, and four labeled messages remained clear. App-only screenshots: `.evidence/ui-review/sequence-zen-reload-app.jpg` and `.evidence/ui-review/sequence-moved-selected-detail.jpg`. Native-shape tests verify the roles/styles and the combined diagram suite passes 41/41.
 - **Limit:** this verifies the named desktop Sequence board; other diagram themes and large boards remain unmeasured.
 
 ### F15 — Hidden Safari automation tab left room changes unsent
@@ -239,6 +239,12 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - **Proof:** a visible Zen tab saved a new Page 2 to the room API immediately; after inserting Sequence, that page held 21 native shapes and survived hard reload with the same layout. A separate Page 3 retained a bound Idea → Review pair after reload and appeared in the room API. Temporary UI diagnostics were removed. Three focused WebSocket recovery tests and the production build pass.
 - **Hardening:** the Durable Object now saves session attachments after handshake, closes orphaned hibernated sockets so clients reconnect, and ignores stale events from replaced sockets. This guards a real recovery edge case but is not claimed as the cause of Safari's hidden-tab test failure.
 - **Limit:** persistence remains unverified when a browser is intentionally frozen or backgrounded without animation frames; such a tab must resume before its queued edits can sync.
+
+### F16 — Dragging the polished Sequence selection tilted lifelines
+
+- [x] **Move invisible anchors with their bound diagram.**
+- **Observed:** excluding the eleven zero-opacity anchors from the initial selection hid their blue outlines, but dragging the ten selected visible shapes left anchor endpoints in place. Lifelines tilted and message arrows detached from their participant lanes on a disposable Zen page.
+- **Fix and proof:** all 21 native shapes now remain selected on insertion, while the FreeForm geo renderer omits indicator paths for zero-opacity anchors. A focused test nudges the selection and checks that every shape moves by the same offset. In live Zen, dragging the inserted Sequence kept all three lifelines vertical and all four message arrows attached; the moved page survived hard reload. Saved screenshots: `.evidence/ui-review/sequence-moved-selected-app.jpg`, `.evidence/ui-review/sequence-moved-clean-app.jpg`, and `.evidence/ui-review/sequence-moved-reloaded-app.jpg`. The seven-image HTML report displayed the selected detail in Safari. Diagram tests pass 41/41 and the production build passes.
 
 ### F06 — Top Menu/dashboard/title/Page overlapped at desktop width
 

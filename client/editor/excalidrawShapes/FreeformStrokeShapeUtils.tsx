@@ -83,6 +83,11 @@ export class FreeformGeoShapeUtil extends GeoShapeUtil {
 		} }
 	}
 
+	override getIndicatorPath(shape: TLGeoShape): Path2D | undefined {
+		// Diagram binding anchors participate in selection and transforms, but have no visible outline.
+		return shape.opacity === 0 ? undefined : super.getIndicatorPath(shape)
+	}
+
 	override component(shape: TLGeoShape) {
 		const native = super.component(shape)
 		if (!isRectangleGeo(shape.props.geo) || getSloppiness(shape) !== 2 || shape.props.dash === 'dashed' || shape.props.dash === 'dotted') return native

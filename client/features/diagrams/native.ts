@@ -58,7 +58,6 @@ export function applyNativeDiagram(editor: Editor, diagram: Diagram, proposalId:
 	if (!editor.getPage(pageId) || editor.getCurrentPageId() !== pageId) throw new Error('Return to the target page before applying this proposal.')
 	const { shapes, bindings } = createNativeDiagram(diagram, proposalId, pageId)
 	const ids = shapes.map((shape) => shape.id!)
-	const visibleIds = shapes.filter((shape) => shape.opacity !== 0).map((shape) => shape.id!)
 	const existing = ids.map((id) => editor.getShape(id)).filter((shape) => shape !== undefined)
 	if (existing.length) {
 		if (existing.length === ids.length && existing.every((shape) => shape.meta.diagramProposal === proposalId && editor.getAncestorPageId(shape) === pageId)) return
@@ -86,7 +85,8 @@ export function applyNativeDiagram(editor: Editor, diagram: Diagram, proposalId:
 				const adjustment = nonOverlappingOffset(actual, occupied)
 				if (adjustment.x || adjustment.y) editor.nudgeShapes(ids, adjustment)
 			}
-			editor.select(...visibleIds)
+			// Bound guide nodes must move with the visible diagram, even when they render invisibly.
+			editor.select(...ids)
 		})
 		if (ids.some((id) => !editor.getShape(id)) || bindings.some((binding) => !editor.getBinding(binding.id!))) {
 			throw new Error('The complete diagram could not be added. The board may have reached its shape limit.')
