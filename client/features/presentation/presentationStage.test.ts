@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { Editor, TLFrameShape, TLShapeId } from 'tldraw'
-import { getPresentationCamera, exportPresentationSlide, exportPresentationSlideWithRetry, getLaserSegment } from './presentationStage'
+import { getPresentationCamera, exportPresentationSlide, exportPresentationSlideWithRetry, getLaserSegment, advanceLaserTrail } from './presentationStage'
 
 test('a small frame expands into a centered slide without exposing nearby canvas', () => {
 	const camera = getPresentationCamera({ x: 200, y: 500, w: 320, h: 180 }, 1280, 720)
@@ -55,4 +55,18 @@ test('laser movement creates a visible segment only for continuous motion', () =
 	assert.equal(getLaserSegment(previous, 21, 41, 116, 4), null, 'jitter does not create a trail')
 	assert.equal(getLaserSegment(previous, 70, 80, 250, 5), null, 'a pause does not connect distant cursor positions')
 	assert.equal(getLaserSegment(previous, 700, 80, 116, 6), null, 'a large jump does not paint across the slide')
+})
+
+test('slow one-pixel pointer movements accumulate into a short visible laser trail', () => {
+	let anchor: { x: number; y: number; at: number } | null = null
+	const segments = []
+	for (let x = 10; x <= 19; x++) {
+		const result = advanceLaserTrail(anchor, x, 20, 100 + x * 8, x)
+		anchor = result.anchor
+		if (result.segment) segments.push(result.segment)
+	}
+	assert.ok(segments.length >= 3, 'small, continuous movements should draw a trail')
+	assert.ok(segments.every((segment) => Math.hypot(segment.x2 - segment.x1, segment.y2 - segment.y1) >= 2))
+	const resumed = advanceLaserTrail(anchor, 40, 20, 900, 50)
+	assert.equal(resumed.segment, null, 'a pause starts a fresh trail instead of connecting distant positions')
 })

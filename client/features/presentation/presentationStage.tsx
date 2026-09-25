@@ -70,6 +70,16 @@ export function getLaserSegment(previous: { x: number; y: number; at: number } |
 	return { id, x1: previous.x, y1: previous.y, x2: x, y2: y }
 }
 
+/** Keep the last drawn point until small pointer movements add up to a visible stroke. */
+export function advanceLaserTrail(previous: { x: number; y: number; at: number } | null, x: number, y: number, now: number, id: number) {
+	const segment = getLaserSegment(previous, x, y, now, id)
+	const distance = previous ? Math.hypot(x - previous.x, y - previous.y) : 0
+	const anchor = segment || !previous || now - previous.at > 130 || distance > 320
+		? { x, y, at: now }
+		: previous
+	return { anchor, segment }
+}
+
 export interface PresentationStageProps {
 	editor: Editor
 	frames: readonly TLFrameShape[]
@@ -110,8 +120,8 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 
 	const moveLaser = (x: number, y: number) => {
 		const now = performance.now()
-		const segment = getLaserSegment(lastLaserPoint.current, x, y, now, ++pointId.current)
-		lastLaserPoint.current = { x, y, at: now }
+		const { anchor, segment } = advanceLaserTrail(lastLaserPoint.current, x, y, now, ++pointId.current)
+		lastLaserPoint.current = anchor
 		setPointer({ x, y })
 		if (!segment) return
 		setTrail((current) => [...current.slice(-23), segment])
