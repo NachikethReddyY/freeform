@@ -88,7 +88,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 		try {
 			// The label editor must receive focus after the modal releases it.
 			const needsCanvasFocus = command.id in connectedDirectionById || command.id === 'create-node'
-				|| command.id in technicalKindById || command.id.startsWith('arrange-')
+				|| command.id in technicalKindById || command.id.startsWith('arrange-') || command.id === 'toggle-focus-mode'
 			if (needsCanvasFocus) {
 				onOpenChange(false)
 				dialog.current?.close()

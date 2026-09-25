@@ -19,6 +19,7 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'zoom-to-fit', kind: 'action', label: 'Zoom to fit', keywords: 'all shapes' },
 	{ id: 'zoom-to-selection', kind: 'action', label: 'Zoom to selection', keywords: 'selected shapes' },
 	{ id: 'zoom-to-100', kind: 'action', label: 'Reset zoom', keywords: '100 percent actual size' },
+	{ id: 'toggle-focus-mode', kind: 'action', label: 'Focus mode', keywords: 'hide panels distraction free canvas' },
 	{ id: 'arrange-diagram', kind: 'custom', label: 'Arrange diagram', keywords: 'auto layout flowchart connected nodes' },
 	{ id: 'arrange-vertical', kind: 'custom', label: 'Arrange vertical', keywords: 'auto layout top bottom diagram' },
 	{ id: 'arrange-tree', kind: 'custom', label: 'Arrange tree', keywords: 'auto layout branches hierarchy diagram' },

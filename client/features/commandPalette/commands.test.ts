@@ -5,7 +5,11 @@ import { availableCommandDefinitions, commandDefinitions, filterCommands, isPale
 test('palette includes requested native tools and zoom actions without duplicate IDs', () => {
 	const ids = commandDefinitions.map((item) => item.id)
 	assert.equal(new Set(ids).size, ids.length)
-	for (const id of ['select', 'hand', 'draw', 'eraser', 'arrow', 'text', 'rectangle', 'ellipse', 'note', 'line', 'diamond', 'frame', 'laser', 'zoom-in', 'zoom-out', 'zoom-to-fit', 'zoom-to-100']) assert.ok(ids.includes(id))
+	for (const id of ['select', 'hand', 'draw', 'eraser', 'arrow', 'text', 'rectangle', 'ellipse', 'note', 'line', 'diamond', 'frame', 'laser', 'zoom-in', 'zoom-out', 'zoom-to-fit', 'zoom-to-100', 'toggle-focus-mode']) assert.ok(ids.includes(id))
+})
+
+test('focus mode is discoverable from the palette', () => {
+	assert.deepEqual(filterCommands(commandDefinitions, 'focus mode').map((command) => command.id), ['toggle-focus-mode'])
 })
 
 test('search matches names and useful aliases, including multiword queries', () => {

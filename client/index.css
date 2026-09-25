@@ -284,6 +284,10 @@ body {
 .freeform-top-tools .tlui-main-toolbar__overflow[data-state='open'] .tlui-button__icon { transform: rotate(225deg); margin-top: 3px; }
 
 .freeform-bottom-controls { position: absolute; left: 10px; bottom: 10px; z-index: 310; display: flex; align-items: center; gap: 8px; pointer-events: all; }
+/* The SDK hides its own chrome in Focus mode; these FreeForm controls sit outside it. */
+.RoomWrapper:has(.tlui-focus-button) .freeform-bottom-controls,
+.RoomWrapper:has(.tlui-focus-button) .freeform-ai,
+body:has(.tlui-focus-button) .freeform-ai-panel { visibility: hidden; pointer-events: none; }
 .freeform-zoom { position: relative; display: flex; align-items: center; gap: 1px; height: 34px; padding: 2px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; color: var(--tl-color-text); box-shadow: var(--tl-shadow-2); }
 .freeform-zoom button, .freeform-zoom summary { min-width: 28px; padding: 4px 6px; color: inherit; background: transparent; border: 0; border-radius: 4px; font: 600 13px 'Geist Sans', sans-serif; text-align: center; cursor: pointer; }
 .freeform-zoom button:hover, .freeform-zoom summary:hover { background: var(--tl-color-muted-1); }
