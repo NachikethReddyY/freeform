@@ -3,7 +3,7 @@
 ## Geist Sans Docker dependency repair — 2026-09-25
 
 - [x] Reinstall locked dependencies into the existing Compose `node_modules` volume without touching board data. Both Geist Sans CSS files are present in the repaired volume.
-- [x] Verify Geist Sans CSS exists in the container and FreeForm loads without the Vite CSS overlay on an isolated local port. Helium rendered the board at `127.0.0.1:5175`; the stylesheet returned HTTP 200. The full build remains blocked by a pre-existing missing `worker/presentationRelay` import in `worker/presentationRelay.test.ts`.
+- [x] Verify Geist Sans CSS exists in the container and FreeForm loads without the Vite CSS overlay on an isolated local port. Helium rendered the board at `127.0.0.1:5175`; the stylesheet returned HTTP 200. The missing presentation-relay import was resolved and the host production build now passes; a fresh container build was not rerun.
 
 ## Presentation and app chrome follow-up — 2026-09-25
 
@@ -36,7 +36,7 @@
 - [x] Audit storage locations: catalog and personal blocks in browser localStorage, rooms in Durable Object SQLite, assets in R2 emulation, thumbnails in browser IndexedDB. Document the split in README and feature map.
 - [ ] Design and implement a central local database and migration, if that remains the product decision. It has not been achieved; existing boards must remain accessible.
 - [ ] Verify each new user flow in the browser at desktop and a constrained viewport, capture evaluated screenshots, run focused tests and build, update `bug.md` and feature documentation.
-- [ ] Commit and push passing checkpoints; update the authorized progress HTML and Postplan report with evidence.
+- [x] Commit and push code checkpoint `7aad872` and report checkpoint `194e862`; update the authorized seven-image HTML report. A further 65 editor/import/paste/AI tests passed with Node's test-runner force-exit flag, bringing the focused check total to 174. Postplan v9 records that final result; remaining visual checks stay open above.
 
 ## Stroke and edge control proof — 2026-09-25
 
