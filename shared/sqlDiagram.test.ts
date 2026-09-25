@@ -59,6 +59,15 @@ test('supports composite foreign keys while keeping a single bound relation', ()
 	assert.match(diagram.nodes[1].label, /account_id  INT  FK/)
 })
 
+test('keeps declared composite primary-key order when resolving an implicit target', () => {
+	const diagram = parseSqlSchema(`
+		CREATE TABLE accounts (id INT, tenant_id INT, PRIMARY KEY (tenant_id, id));
+		CREATE TABLE invoices (tenant_id INT, account_id INT,
+			FOREIGN KEY (tenant_id, account_id) REFERENCES accounts);
+	`)
+	assert.equal(diagram.edges[0].label, 'tenant_id, account_id → tenant_id, id')
+})
+
 test('does not treat SQL keywords inside default strings as constraints', () => {
 	const diagram = parseSqlSchema("CREATE TABLE notes (id INT, body TEXT DEFAULT 'REFERENCES users(id), PRIMARY KEY;');")
 	assert.equal(diagram.edges.length, 0)
@@ -87,4 +96,26 @@ test('rejects unsupported syntax and excessive input instead of truncating the d
 	assert.throws(() => parseSqlSchema('CREATE TABLE users (email TEXT CONSTRAINT users_email_unique UNIQUE);'), /Unsupported UNIQUE constraint.*users\.email/i)
 	assert.throws(() => parseSqlSchema(Array.from({ length: 81 }, (_, i) => `CREATE TABLE t${i} (id INT);`).join('\n')), /at most 80 tables/i)
 	assert.throws(() => parseSqlSchema('CREATE TABLE users (name TEXT);'.repeat(2000)), /32 KiB/i)
+})
+
+test('rejects referential actions that cannot be shown on native arrows', () => {
+	const users = 'CREATE TABLE users (id INT PRIMARY KEY);'
+	assert.throws(() => parseSqlSchema(`${users} CREATE TABLE orders (user_id INT REFERENCES users(id) ON DELETE CASCADE);`), /Unsupported foreign key clause.*ON DELETE CASCADE/i)
+	assert.throws(() => parseSqlSchema(`${users} CREATE TABLE orders (user_id INT, FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE RESTRICT);`), /Unsupported foreign key clause.*ON UPDATE RESTRICT/i)
+})
+
+test('rejects conflicting or unrepresented primary key constraints', () => {
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT PRIMARY KEY, email TEXT PRIMARY KEY);'), /Multiple PRIMARY KEY/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT PRIMARY KEY, email TEXT, PRIMARY KEY (email));'), /Multiple PRIMARY KEY/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT, PRIMARY KEY (id, id));'), /Duplicate primary key column/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT);'), /Unsupported PRIMARY KEY clause/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INTEGER PRIMARY KEY ON CONFLICT IGNORE);'), /Unsupported PRIMARY KEY clause/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT, PRIMARY KEY id);'), /Unsupported table constraint.*PRIMARY KEY/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT, FOREIGN KEY id REFERENCES users(id));'), /Unsupported table constraint.*FOREIGN KEY/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT, CONSTRAINT users_key DEFERRABLE);'), /Unsupported table constraint/i)
+})
+
+test('rejects a foreign key target that is not a represented primary key', () => {
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT PRIMARY KEY, email TEXT); CREATE TABLE orders (email TEXT REFERENCES users(email));'), /Referenced columns.*users.*primary key/i)
+	assert.throws(() => parseSqlSchema('CREATE TABLE users (id INT); CREATE TABLE orders (user_id INT REFERENCES users(id));'), /Referenced columns.*users.*primary key/i)
 })

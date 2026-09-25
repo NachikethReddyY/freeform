@@ -6,7 +6,7 @@ const FIELD_SUFFIX = /\b(?:PRIMARY\s+KEY|REFERENCES|NOT\s+NULL|DEFAULT|UNIQUE|CH
 
 interface Column { name: string; type: string; primary: boolean; foreign: boolean }
 interface Reference { columns: string[]; target: string; targetColumns: string[] }
-interface Table { name: string; key: string; columns: Column[]; references: Reference[] }
+interface Table { name: string; key: string; columns: Column[]; primaryKey: string[]; references: Reference[] }
 
 // Quotes can contain commas, semicolons and parentheses. Scan once instead of
 // splitting with regex, so a pasted SQL default cannot turn into a fake table.
@@ -131,7 +131,8 @@ function reference(source: string): { reference: Omit<Reference, 'columns'>; res
 	const target = qualifiedIdentifier(source.slice(match[0].length))
 	const remainder = target.rest.trimStart()
 	const columns = remainder.startsWith('(') ? parenthesizedNames(remainder) : { names: [], rest: remainder }
-	if (columns.rest.trim() && !/^(?:ON\s+(?:DELETE|UPDATE)\s+(?:CASCADE|RESTRICT|SET\s+NULL|NO\s+ACTION)(?:\s+|$))+$/i.test(columns.rest.trim())) {
+	// Referential actions and deferral cannot be carried by the native diagram edge.
+	if (columns.rest.trim()) {
 		throw new Error(`Unsupported foreign key clause: ${columns.rest.trim().slice(0, 60)}`)
 	}
 	return { reference: { target: target.name, targetColumns: columns.names }, rest: columns.rest }
@@ -150,20 +151,25 @@ function parseTable(statement: string): Table {
 	const columns: Column[] = []
 	const references: Reference[] = []
 	const primaryColumns: string[] = []
+	let primaryDeclarations = 0
 	for (const definition of definitions) {
 		let part = definition
 		if (/^CONSTRAINT\s+/i.test(part)) {
 			part = identifier(part.replace(/^CONSTRAINT\s+/i, '')).rest.trimStart()
+			if (!/^(?:PRIMARY\s+KEY|FOREIGN\s+KEY|CHECK|UNIQUE|EXCLUDE|INDEX|KEY)\b/i.test(part)) {
+				throw new Error(`Unsupported table constraint in ${tableName.name}: ${part.slice(0, 60)}`)
+			}
 		}
 		if (/^PRIMARY\s+KEY\s*\(/i.test(part)) {
 			const parsed = parenthesizedNames(part.replace(/^PRIMARY\s+KEY\s*/i, ''))
 			if (parsed.rest.trim()) throw new Error(`Unsupported PRIMARY KEY clause in ${tableName.name}.`)
+			primaryDeclarations++
 			primaryColumns.push(...parsed.names)
 		} else if (/^FOREIGN\s+KEY\s*\(/i.test(part)) {
 			const local = parenthesizedNames(part.replace(/^FOREIGN\s+KEY\s*/i, ''))
 			const parsed = reference(local.rest)
 			references.push({ columns: local.names, ...parsed.reference })
-		} else if (/^(?:CHECK|UNIQUE|EXCLUDE|INDEX|KEY)\b/i.test(part)) {
+		} else if (/^(?:PRIMARY\s+KEY|FOREIGN\s+KEY|CHECK|UNIQUE|EXCLUDE|INDEX|KEY)\b/i.test(part)) {
 			throw new Error(`Unsupported table constraint in ${tableName.name}: ${part.slice(0, 60)}`)
 		} else {
 			const parsed = identifier(part)
@@ -173,12 +179,22 @@ function parseTable(statement: string): Table {
 			if (!type) throw new Error(`Column ${parsed.name} in ${tableName.name} has no type.`)
 			if (/\bCHECK\b/i.test(unquoted)) throw new Error(`Unsupported CHECK constraint on ${tableName.name}.${parsed.name}.`)
 			if (/\bUNIQUE\b/i.test(unquoted)) throw new Error(`Unsupported UNIQUE constraint on ${tableName.name}.${parsed.name}.`)
-			const primary = /\bPRIMARY\s+KEY\b/i.test(unquoted)
+			const primaryMatch = /\bPRIMARY\s+KEY\b/i.exec(unquoted)
+			const primary = primaryMatch !== null
+			if (primaryMatch) {
+				primaryDeclarations++
+				const trailing = unquoted.slice(primaryMatch.index + primaryMatch[0].length).trim()
+				if ((trailing && !/^(?:NOT\s+NULL|REFERENCES|DEFAULT|COLLATE)\b/i.test(trailing)) || /\b(?:AUTOINCREMENT|ON\s+CONFLICT|DEFERRABLE|INITIALLY)\b/i.test(unquoted)) {
+					throw new Error(`Unsupported PRIMARY KEY clause on ${tableName.name}.${parsed.name}.`)
+				}
+			}
 			columns.push({ name: parsed.name, type, primary, foreign: false })
 			const inline = /\bREFERENCES\b/i.exec(unquoted)
 			if (inline) references.push({ columns: [parsed.name], ...reference(parsed.rest.slice(inline.index)).reference })
 		}
 	}
+	if (primaryDeclarations > 1) throw new Error(`Multiple PRIMARY KEY declarations in ${tableName.name}.`)
+	if (new Set(primaryColumns.map(columnKey)).size !== primaryColumns.length) throw new Error(`Duplicate primary key column in ${tableName.name}.`)
 	if (columns.length > MAX_COLUMNS) throw new Error(`Table ${tableName.name} has more than ${MAX_COLUMNS} columns; its label would not fit.`)
 	const known = new Set<string>()
 	for (const column of columns) {
@@ -197,7 +213,8 @@ function parseTable(statement: string): Table {
 			column.foreign = true
 		}
 	}
-	return { name: tableName.name, key: columnKey(tableName.name), columns, references }
+	const primaryKey = primaryColumns.length ? primaryColumns : columns.filter((column) => column.primary).map((column) => column.name)
+	return { name: tableName.name, key: columnKey(tableName.name), columns, primaryKey, references }
 }
 
 /** Convert a bounded CREATE TABLE subset to editable native nodes and arrows. No SQL runs. */
@@ -223,11 +240,15 @@ export function parseSqlSchema(source: string): Diagram {
 			}
 			if (!target) throw new Error(`Referenced table ${relation.target} not found. Include its CREATE TABLE statement.`)
 			if (target === table) throw new Error(`Self-referencing foreign key in ${table.name} cannot be represented by the current diagram format.`)
-			const targetColumns = relation.targetColumns.length ? relation.targetColumns : target.columns.filter((column) => column.primary).map((column) => column.name)
+			const targetColumns = relation.targetColumns.length ? relation.targetColumns : target.primaryKey
 			if (!targetColumns.length) throw new Error(`Referenced table ${target.name} has no primary key; name target columns explicitly.`)
 			if (relation.columns.length !== targetColumns.length) throw new Error(`Foreign key in ${table.name} has a different number of source and target columns.`)
 			for (const name of targetColumns) {
 				if (!target.columns.some((column) => columnKey(column.name) === columnKey(name))) throw new Error(`Referenced column ${target.name}.${name} not found.`)
+			}
+			const primary = target.primaryKey.map(columnKey)
+			if (targetColumns.length !== primary.length || targetColumns.some((name, position) => columnKey(name) !== primary[position])) {
+				throw new Error(`Referenced columns in ${target.name} must match its primary key; UNIQUE targets are not represented.`)
 			}
 			edges.push({ id: `fk${edges.length + 1}`, from: `table${index + 1}`, to: `table${tables.indexOf(target) + 1}`, label: `${relation.columns.join(', ')} → ${targetColumns.join(', ')}`, color: 'black' })
 			if (edges.length > DIAGRAM_LIMITS.edges) throw new Error('A diagram supports at most 120 foreign keys.')
