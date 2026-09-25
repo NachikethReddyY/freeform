@@ -321,5 +321,6 @@ body {
 	.freeform-left-shell[data-panel='diagrams'] { width: min(300px, calc(100vw - 16px)); }
 	.freeform-top-tools { top: 59px; left: 8px; right: auto; transform: none; width: min(440px, calc(100vw - 16px)); max-width: none; }
 	.freeform-control-line { max-width: 100vw; }
-	.freeform-board-name { max-width: 95px; }
+	.freeform-board-name { max-width: clamp(95px, calc(100vw - 430px), 170px); }
+	.freeform-board-name-input { width: clamp(95px, calc(100vw - 430px), 165px); }
 }
