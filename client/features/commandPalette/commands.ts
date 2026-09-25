@@ -1,4 +1,4 @@
-interface CommandDefinition { id: string; kind: 'tool' | 'action'; label: string; keywords: string }
+export interface CommandDefinition { id: string; kind: 'tool' | 'action' | 'custom'; label: string; keywords: string }
 
 export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'select', kind: 'tool', label: 'Select', keywords: 'pointer cursor' },
@@ -19,7 +19,12 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'zoom-to-fit', kind: 'action', label: 'Zoom to fit', keywords: 'all shapes' },
 	{ id: 'zoom-to-selection', kind: 'action', label: 'Zoom to selection', keywords: 'selected shapes' },
 	{ id: 'zoom-to-100', kind: 'action', label: 'Reset zoom', keywords: '100 percent actual size' },
+	{ id: 'arrange-diagram', kind: 'custom', label: 'Arrange diagram', keywords: 'auto layout flowchart connected nodes' },
 ]
+
+export function availableCommandDefinitions(canArrangeDiagram: boolean): CommandDefinition[] {
+	return commandDefinitions.filter((definition) => definition.id !== 'arrange-diagram' || canArrangeDiagram)
+}
 
 export function filterCommands<T extends { label: string; keywords: string }>(commands: readonly T[], query: string): T[] {
 	const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)

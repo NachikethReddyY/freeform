@@ -1,9 +1,11 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { TldrawUiKbd, useActions, useEditor, useTools, useValue } from 'tldraw'
-import { commandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex } from './commands'
+import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../diagrams/layout'
+import { availableCommandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex, type CommandDefinition } from './commands'
 import './commandPalette.css'
 
 export interface CommandPaletteProps { open: boolean; onOpenChange: (open: boolean) => void }
+type PaletteCommand = CommandDefinition & { onSelect: () => void | Promise<void>; kbd?: string }
 
 /** Mount inside Tldraw to reuse its configured tool and action registries. */
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -17,12 +19,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const [query, setQuery] = useState('')
 	const [active, setActive] = useState(0)
 	const [error, setError] = useState('')
-	const { readonly, selected } = useValue('palette availability', () => ({ readonly: editor.getIsReadonly(), selected: editor.getSelectedShapeIds().length }), [editor])
-	const commands = useMemo(() => commandDefinitions.flatMap((definition) => {
+	const { readonly, selected, canArrangeDiagram } = useValue('palette availability', () => ({
+		readonly: editor.getIsReadonly(),
+		selected: editor.getSelectedShapeIds().length,
+		canArrangeDiagram: canLayoutSelectedDiagram(editor),
+	}), [editor])
+	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram).flatMap<PaletteCommand>((definition) => {
+		if (definition.kind === 'custom') {
+			return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor) } }]
+		}
 		const native = definition.kind === 'tool' ? tools[definition.id] : actions[definition.id]
 		if (!native || (readonly && !native.readonlyOk) || (definition.id === 'zoom-to-selection' && selected === 0)) return []
-		return [{ ...definition, native }]
-	}), [actions, tools, readonly, selected])
+		return [{ ...definition, onSelect: () => native.onSelect('dialog'), kbd: native.kbd }]
+	}), [actions, tools, editor, readonly, selected, canArrangeDiagram])
 	const matches = filterCommands(commands, query)
 	const selectedIndex = Math.min(active, Math.max(0, matches.length - 1))
 
@@ -54,8 +63,8 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
 	const choose = async (command: typeof commands[number]) => {
 		try {
-			// The native registry handles geo styles, selection state, and tool-lock behavior.
-			await command.native.onSelect('dialog')
+			// Native commands still delegate to tldraw's configured registry.
+			await command.onSelect()
 			onOpenChange(false)
 			dialog.current?.close()
 			editor.focus()
@@ -93,7 +102,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 		<ul id={`${id}-results`} role="listbox" aria-label="Commands" tabIndex={-1}>
 			{matches.map((command, index) => <li id={`${id}-command-${index}`} key={command.id} role="option" aria-selected={index === selectedIndex}
 				onPointerMove={() => setActive(index)} onMouseDown={(event) => event.preventDefault()} onClick={() => void choose(command)}>
-				<span>{command.label}</span>{command.native.kbd && <TldrawUiKbd>{command.native.kbd}</TldrawUiKbd>}
+				<span>{command.label}</span>{command.kbd && <TldrawUiKbd>{command.kbd}</TldrawUiKbd>}
 			</li>)}
 		</ul>
 		{matches.length === 0 && <p role="status">No matching commands.</p>}

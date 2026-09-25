@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { commandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex } from './commands'
+import { availableCommandDefinitions, commandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex } from './commands'
 
 test('palette includes requested native tools and zoom actions without duplicate IDs', () => {
 	const ids = commandDefinitions.map((item) => item.id)
@@ -14,6 +14,15 @@ test('search matches names and useful aliases, including multiword queries', () 
 	assert.deepEqual(filterCommands(commands, 'zoom 100').map((command) => command.id), ['zoom-to-100'])
 	assert.equal(filterCommands(commands, 'not available').length, 0)
 	assert.equal(filterCommands(commands, '').length, commands.length)
+})
+
+test('arrange diagram is searchable only when a diagram can be laid out', () => {
+	const unavailable = availableCommandDefinitions(false)
+	const available = availableCommandDefinitions(true)
+	assert.equal(filterCommands(unavailable, 'auto layout').length, 0)
+	assert.deepEqual(filterCommands(available, 'auto layout').map((command) => command.id), ['arrange-diagram'])
+	assert.equal(unavailable.length + 1, available.length)
+	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => command.id !== 'arrange-diagram').map((command) => command.id))
 })
 
 test('keyboard selection wraps and the palette chord preserves native K and modified K', () => {
