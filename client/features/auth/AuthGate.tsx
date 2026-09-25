@@ -1,14 +1,8 @@
 import { createContext, FormEvent, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { getSession, login, logout, register, validateSetup, type AuthSession } from './authClient'
+import { getSession, login, logout, register, validateSetup } from './authClient'
 import { createAuthTabSync, type AuthTabSync } from './authTabSync'
+import { AuthenticatedWorkspace, beginSessionRecheck, completeSessionRecheck, statusFromSession, type AuthStatus } from './authGateState'
 import './auth.css'
-
-type AuthStatus =
-	| { kind: 'loading' }
-	| { kind: 'setup' }
-	| { kind: 'signed-out' }
-	| { kind: 'signed-in'; ownerId: string }
-	| { kind: 'error'; message: string }
 
 interface AuthContextValue {
 	status: AuthStatus
@@ -19,11 +13,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
-
-function statusFromSession(session: AuthSession): AuthStatus {
-	if (session.authenticated && session.owner) return { kind: 'signed-in', ownerId: session.owner.id }
-	return { kind: session.setupRequired ? 'setup' : 'signed-out' }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
 	const [status, setStatus] = useState<AuthStatus>({ kind: 'loading' })
@@ -59,13 +48,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 			},
 			() => {
 				const version = ++requestVersion.current
-				// A returning tab must hide cached board content until the cookie is checked.
-				setStatus({ kind: 'loading' })
+				// Retain the mounted editor so an active presentation and its remote
+				// survive a successful recheck. AuthGate hides and inerts it meanwhile.
+				setStatus(beginSessionRecheck)
 				void getSession().then(
 					(session) => {
 						if (requestVersion.current !== version) return
-						const next = statusFromSession(session)
-						setStatus((current) => current.kind === 'signed-in' && next.kind === 'signed-in' ? current : next)
+						setStatus((current) => completeSessionRecheck(current, session))
 					},
 					(error: unknown) => {
 						if (requestVersion.current === version) setStatus({ kind: 'error', message: error instanceof Error ? error.message : 'Could not load your account.' })
@@ -178,5 +167,5 @@ export function AuthGate({ children }: { children: ReactNode }) {
 	if (status.kind === 'error') return <main className="freeform-auth-page"><div className="freeform-auth-card"><h1>Could not open FreeForm</h1><p className="freeform-auth-error" role="alert">{status.message}</p><button className="freeform-auth-submit" type="button" onClick={() => void refresh()}>Try again</button></div></main>
 	if (status.kind === 'setup') return <AuthForm setup />
 	if (status.kind === 'signed-out') return <AuthForm setup={false} />
-	return <>{children}</>
+	return <AuthenticatedWorkspace key={status.ownerId} checking={Boolean(status.verifying)}>{children}</AuthenticatedWorkspace>
 }

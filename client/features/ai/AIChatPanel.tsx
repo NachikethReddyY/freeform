@@ -152,6 +152,6 @@ export function AIChatPanel() {
 				<textarea ref={promptRef} aria-label="Message to AI" placeholder={mode === 'diagram' ? 'Describe the diagram or paste code…' : 'Ask about your idea…'} maxLength={4000} rows={3} value={prompt} onChange={(event) => setPrompt(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void send() } }} />
 				<div>{busy === 'message' ? <button type="button" onClick={stop}>Stop</button> : <button type="submit" disabled={busy !== null || !prompt.trim()}>{mode === 'diagram' ? 'Create preview' : 'Send'}</button>}</div>
 			</form>
-		</aside>, document.body)}
+		</aside>, editor.getContainer())}
 	</div>
 }

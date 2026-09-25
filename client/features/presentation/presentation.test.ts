@@ -391,7 +391,7 @@ test('fullscreen enters only when supported and calls the browser API', async ()
 	assert.equal(requested, true)
 })
 
-test('leaving browser fullscreen closes the presentation overlay and restores editor state', async () => {
+test('presentation stays in its tab for a remote, and optional fullscreen can be left without ending it', async () => {
 	const first = frame('frame:fullscreen', 0, 0)
 	const documentRef: { fullscreenEnabled: boolean; fullscreenElement: Element | null; exitFullscreen: () => Promise<void> } = {
 		fullscreenEnabled: true,
@@ -423,11 +423,17 @@ test('leaving browser fullscreen closes the presentation overlay and restores ed
 	const presentation = new PresentationController(editor)
 	assert.equal(presentation.start(), true)
 	await new Promise<void>((resolve) => setImmediate(resolve))
+	assert.equal(documentRef.fullscreenElement, null, 'starting a presentation keeps the tab available for a remote')
+	assert.equal(await presentation.enterFullscreen(), true)
 	assert.equal(documentRef.fullscreenElement, container)
 	assert.equal(readonly, true)
 
 	documentRef.fullscreenElement = null
 	presentation.fullscreenChanged()
+	assert.equal(presentation.isPresenting, true)
+	assert.equal(readonly, true)
+	assert.equal(container.dataset.freeformPresentation, 'true')
+	assert.equal(presentation.exit(), true)
 	assert.equal(presentation.isPresenting, false)
 	assert.equal(readonly, false)
 	assert.deepEqual(camera, originalCamera)

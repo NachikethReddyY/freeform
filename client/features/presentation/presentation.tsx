@@ -162,14 +162,18 @@ export class PresentationController {
 		this.editor.updateInstanceState({ isReadonly: true }, { history: 'ignore' })
 		const container = this.editor.getContainer()
 		container.dataset.freeformPresentation = 'true'
-		void requestPresentationFullscreen(container).then((entered) => {
-			this.ownsFullscreen = entered
-			if (entered && this.isPresenting) this.showCurrentFrame()
-			else if (entered) void exitPresentationFullscreen(container)
-			if (entered && !container.ownerDocument.fullscreenElement) this.exit()
-		})
 		this.emit()
 		return true
+	}
+
+	async enterFullscreen() {
+		if (!this.isPresenting) return false
+		const container = this.editor.getContainer()
+		const entered = await requestPresentationFullscreen(container)
+		this.ownsFullscreen = entered && container.ownerDocument.fullscreenElement === container
+		if (this.ownsFullscreen && this.isPresenting) this.showCurrentFrame()
+		else if (entered) await exitPresentationFullscreen(container)
+		return this.ownsFullscreen
 	}
 
 	next() {
@@ -232,7 +236,10 @@ export class PresentationController {
 	}
 
 	fullscreenChanged() {
-		if (this.ownsFullscreen && !this.editor.getContainer().ownerDocument.fullscreenElement) this.exit()
+		// Safari leaves element fullscreen when the presenter opens its remote tab.
+		// Keep the presentation alive; the stage still fills its tab and Escape or
+		// the explicit Exit control remains the intentional way to end it.
+		if (this.ownsFullscreen && !this.editor.getContainer().ownerDocument.fullscreenElement) this.ownsFullscreen = false
 	}
 
 	private goTo(nextIndex: number) {
@@ -367,6 +374,7 @@ export function PresentationControls({ editor }: PresentationControlsProps) {
 		previousFrameId={presentation.previousFrameId}
 		onPrevious={() => presentation.previous()}
 		onNext={() => presentation.next()}
+		onEnterFullscreen={() => presentation.enterFullscreen()}
 		onExit={() => presentation.exit()}
 	/>, editor.getContainer())
 }

@@ -45,7 +45,7 @@ export async function exportPresentationSlideWithRetry(
 	return exportPresentationSlide(editor, frame, darkMode)
 }
 
-function Icon({ name }: { name: 'previous' | 'next' | 'laser' | 'hide' | 'show' | 'close' | 'dark' | 'light' | 'remote' }) {
+function Icon({ name }: { name: 'previous' | 'next' | 'laser' | 'hide' | 'show' | 'close' | 'dark' | 'light' | 'remote' | 'fullscreen' }) {
 	const path = {
 		previous: <path d="m14.5 5-7 7 7 7" />,
 		next: <path d="m9.5 5 7 7-7 7" />,
@@ -56,6 +56,7 @@ function Icon({ name }: { name: 'previous' | 'next' | 'laser' | 'hide' | 'show' 
 		dark: <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 8.6 8.6 0 1 0 20.5 14.5Z" />,
 		light: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M19 5l-1.5 1.5m-11 11L5 19" /></>,
 		remote: <><rect x="7" y="2.5" width="10" height="19" rx="2" /><path d="M11 18.5h2M4 8.5a8 8 0 0 0 0 7m16-7a8 8 0 0 1 0 7" /></>,
+		fullscreen: <path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6" />,
 	}[name]
 	return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">{path}</svg>
 }
@@ -88,10 +89,11 @@ export interface PresentationStageProps {
 	previousFrameId: TLShapeId | null
 	onPrevious(): void
 	onNext(): void
+	onEnterFullscreen(): void | Promise<boolean>
 	onExit(): void
 }
 
-export function PresentationStage({ editor, frames, index, previousFrameId, onPrevious, onNext, onExit }: PresentationStageProps) {
+export function PresentationStage({ editor, frames, index, previousFrameId, onPrevious, onNext, onEnterFullscreen, onExit }: PresentationStageProps) {
 	const surfaceRef = useRef<HTMLDivElement>(null)
 	const remoteHost = useRef<ReturnType<typeof createPresentationRemoteHost> | null>(null)
 	const remoteState = useRef<PresentationRemoteState>({ presenting: true, index, count: frames.length, title: '', laserActive: false })
@@ -272,6 +274,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 				<button type="button" aria-label={darkMode ? 'Use light slide background' : 'Use dark slide background'} title={darkMode ? 'Light slides' : 'Dark slides'} aria-pressed={darkMode} onClick={() => setDarkMode((value) => !value)}><Icon name={darkMode ? 'light' : 'dark'} /></button>
 				<button type="button" aria-label={laserActive ? 'Turn laser pointer off' : 'Turn laser pointer on'} title="Laser pointer" aria-pressed={laserActive} onClick={() => { setLaserActive((value) => !value); setPointer(null); setTrail([]); setPulse(null); lastLaserPoint.current = null }}><Icon name="laser" /></button>
 				<button type="button" aria-label="Presentation remote" title="Presentation remote" aria-expanded={remoteOpen} onClick={() => setRemoteOpen((value) => !value)}><Icon name="remote" /></button>
+				<button type="button" aria-label="Enter browser fullscreen" title="Browser fullscreen" onClick={() => { void onEnterFullscreen() }}><Icon name="fullscreen" /></button>
 				<button type="button" aria-label="Hide presentation controls" title="Hide controls" onClick={() => setControlsHidden(true)}><Icon name="hide" /></button>
 				<button type="button" aria-label="Exit presentation" title="End presentation" onClick={onExit}><Icon name="close" /></button>
 				{remoteOpen && <div className="freeform-presentation-stage__remote-popover" onPointerDown={(event) => event.stopPropagation()}>
