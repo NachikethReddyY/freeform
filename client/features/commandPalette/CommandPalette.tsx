@@ -87,7 +87,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const choose = async (command: typeof commands[number]) => {
 		try {
 			// The label editor must receive focus after the modal releases it.
-			if (command.id in connectedDirectionById || command.id === 'create-node' || command.id in technicalKindById) {
+			const needsCanvasFocus = command.id in connectedDirectionById || command.id === 'create-node'
+				|| command.id in technicalKindById || command.id.startsWith('arrange-')
+			if (needsCanvasFocus) {
 				onOpenChange(false)
 				dialog.current?.close()
 				// Let the dialog's native focus restoration finish before the shape editor opens.

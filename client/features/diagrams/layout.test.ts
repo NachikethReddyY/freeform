@@ -147,6 +147,27 @@ test('a chain is layered in dependency order and repeated layout does not add hi
 	} finally { editor.dispose() }
 })
 
+test('reapplying an unchanged layout brings its nodes back into view', () => {
+	const editor = new TestEditor()
+	try {
+		const a = node(editor, 'A', 100, 100)
+		const b = node(editor, 'B', 500, 100)
+		connect(editor, a, b)
+		editor.select(a, b)
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), true)
+		editor.setCamera({ x: -2000, y: -2000, z: 1 })
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), false, 'geometry stays unchanged')
+		const screen = editor.getViewportScreenBounds()
+		for (const id of [a, b]) {
+			const bounds = editor.getShapePageBounds(id)!
+			const topLeft = editor.pageToScreen({ x: bounds.x, y: bounds.y })
+			const bottomRight = editor.pageToScreen({ x: bounds.maxX, y: bounds.maxY })
+			assert.ok(topLeft.x >= 256 && topLeft.y >= 160)
+			assert.ok(bottomRight.x <= screen.width - 64 && bottomRight.y <= screen.height - 96)
+		}
+	} finally { editor.dispose() }
+})
+
 test('a cycle has finite, deterministic positions', () => {
 	const editor = new TestEditor()
 	try {
@@ -363,6 +384,22 @@ test('compact layout preserves the bound graph and uses less space than ordinary
 	} finally { editor.dispose() }
 })
 
+test('compact branches leave the ordinary lane gap for arrow captions', () => {
+	const editor = new TestEditor()
+	try {
+		const decision = node(editor, 'Decision', 100, 100)
+		const yes = node(editor, 'Yes', 400, 100)
+		const no = node(editor, 'No', 400, 300)
+		connect(editor, decision, yes)
+		connect(editor, decision, no)
+		editor.select(decision, yes, no)
+		assert.equal(layoutSelectedDiagram(editor, 'compact'), true)
+		const upper = editor.getShapePageBounds(yes)!
+		const lower = editor.getShapePageBounds(no)!
+		assert.ok(lower.y - upper.maxY >= 64, 'parallel arrow captions need distinct lanes')
+	} finally { editor.dispose() }
+})
+
 test('radial layout keeps a stable center and separates variable-size nodes', () => {
 	const editor = new TestEditor()
 	try {
@@ -381,6 +418,14 @@ test('radial layout keeps a stable center and separates variable-size nodes', ()
 		assert.equal(layoutSelectedDiagram(editor, 'radial'), true)
 		assert.deepEqual(editor.getShapePageBounds(center)!.center, originalCenter)
 		const boxes = [center, ...leaves].map((id) => editor.getShapePageBounds(id)!)
+		const viewport = editor.getViewportPageBounds()
+		const zoom = editor.getZoomLevel()
+		for (const box of boxes) {
+			assert.ok(box.x >= viewport.x + 256 / zoom && box.maxX <= viewport.maxX - 64 / zoom,
+				'radial node should remain clear of the left style panel and right edge')
+			assert.ok(box.y >= viewport.y + 160 / zoom && box.maxY <= viewport.maxY - 96 / zoom,
+				'radial node should remain below top controls and above footer controls')
+		}
 		for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
 			assert.ok(boxes[i].maxX + 24 <= boxes[j].x || boxes[j].maxX + 24 <= boxes[i].x
 				|| boxes[i].maxY + 24 <= boxes[j].y || boxes[j].maxY + 24 <= boxes[i].y,

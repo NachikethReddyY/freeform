@@ -184,7 +184,8 @@ function positions(nodes: readonly LayoutNode[], edges: readonly Edge[], directi
 	if (direction === 'radial') return radialPositions(nodes, edges)
 	const vertical = direction === 'vertical'
 	const primaryGap = direction === 'compact' ? 96 : HORIZONTAL_GAP
-	const secondaryGap = direction === 'compact' ? 40 : VERTICAL_GAP
+	// Keep branch captions in distinct lanes even when the primary axis is compact.
+	const secondaryGap = direction === 'compact' ? 72 : VERTICAL_GAP
 	const byId = new Map(nodes.map((node) => [node.shape.id, node]))
 	const byOriginalPosition = (left: TLShapeId, right: TLShapeId) => {
 		const a = byId.get(left)!.bounds, b = byId.get(right)!.bounds
@@ -271,9 +272,10 @@ export function layoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDi
 		return Math.abs(x - shape.x) < 0.01 && Math.abs(y - shape.y) < 0.01
 			? [] : [{ id: shape.id, type: shape.type, x, y }]
 	})
-	if (!changes.length) return false
-	editor.markHistoryStoppingPoint('Layout diagram')
-	editor.run(() => editor.updateShapes(changes))
+	if (changes.length) {
+		editor.markHistoryStoppingPoint('Layout diagram')
+		editor.run(() => editor.updateShapes(changes))
+	}
 	const arranged = graph.nodes.map(({ shape, bounds }) => ({ ...next.get(shape.id)!, w: bounds.w, h: bounds.h }))
 	const minX = Math.min(...arranged.map(({ x }) => x))
 	const minY = Math.min(...arranged.map(({ y }) => y)) + shiftY
@@ -283,12 +285,16 @@ export function layoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDi
 	// The selected-shape panel occupies the left edge of the canvas. Fit the
 	// result in the remaining area so its first node is visible while editing.
 	const panelWidth = Math.min(256, screen.width * 0.4)
-	const availableWidth = Math.max(1, screen.width - panelWidth - 64)
-	const zoom = Math.min(1, availableWidth / (maxX - minX), Math.max(1, screen.height - 128) / (maxY - minY))
+	const rightMargin = 64
+	const topMargin = 160
+	const bottomMargin = 96
+	const availableWidth = Math.max(1, screen.width - panelWidth - rightMargin)
+	const availableHeight = Math.max(1, screen.height - topMargin - bottomMargin)
+	const zoom = Math.min(1, availableWidth / Math.max(1, maxX - minX), availableHeight / Math.max(1, maxY - minY))
 	editor.setCamera({
 		x: -minX + (panelWidth + (availableWidth - (maxX - minX) * zoom) / 2) / zoom,
-		y: -minY + (screen.height - (maxY - minY) * zoom) / 2 / zoom,
+		y: -minY + (topMargin + (availableHeight - (maxY - minY) * zoom) / 2) / zoom,
 		z: zoom,
 	})
-	return true
+	return changes.length > 0
 }
