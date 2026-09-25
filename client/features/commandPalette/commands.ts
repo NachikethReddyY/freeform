@@ -22,6 +22,8 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'arrange-diagram', kind: 'custom', label: 'Arrange diagram', keywords: 'auto layout flowchart connected nodes' },
 	{ id: 'arrange-vertical', kind: 'custom', label: 'Arrange vertical', keywords: 'auto layout top bottom diagram' },
 	{ id: 'arrange-tree', kind: 'custom', label: 'Arrange tree', keywords: 'auto layout branches hierarchy diagram' },
+	{ id: 'arrange-radial', kind: 'custom', label: 'Arrange radial', keywords: 'circle mind map connected nodes' },
+	{ id: 'arrange-compact', kind: 'custom', label: 'Arrange compact', keywords: 'auto layout dense flowchart connected nodes' },
 	{ id: 'create-node', kind: 'custom', label: 'Create node', keywords: 'create node rectangle box diagram keyboard' },
 	{ id: 'create-api', kind: 'custom', label: 'Create API', keywords: 'create api endpoint developer node' },
 	{ id: 'create-database', kind: 'custom', label: 'Create database', keywords: 'create database sql data node' },
@@ -35,10 +37,11 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'connect-left', kind: 'custom', label: 'Connect node left', keywords: 'connect node left diagram' },
 ]
 
-export function availableCommandDefinitions(canArrangeDiagram: boolean, canConnectNode = false, canCreateNode = false, canArrangeTree = false): CommandDefinition[] {
+export function availableCommandDefinitions(canArrangeDiagram: boolean, canConnectNode = false, canCreateNode = false, canArrangeTree = false, canArrangeRadial = false): CommandDefinition[] {
 	return commandDefinitions.filter((definition) => {
-		if (definition.id === 'arrange-diagram' || definition.id === 'arrange-vertical') return canArrangeDiagram
+		if (definition.id === 'arrange-diagram' || definition.id === 'arrange-vertical' || definition.id === 'arrange-compact') return canArrangeDiagram
 		if (definition.id === 'arrange-tree') return canArrangeTree
+		if (definition.id === 'arrange-radial') return canArrangeRadial
 		if (definition.id.startsWith('create-')) return canCreateNode
 		if (definition.id.startsWith('connect-')) return canConnectNode
 		return true

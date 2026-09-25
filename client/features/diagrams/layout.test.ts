@@ -335,3 +335,88 @@ test('tree layout is unavailable for cycles and shared descendants without chang
 		assert.deepEqual([a, b, c].map((id) => editor.getShape(id)), before)
 	} finally { editor.dispose() }
 })
+
+test('compact layout preserves the bound graph and uses less space than ordinary horizontal layout', () => {
+	const editor = new TestEditor()
+	try {
+		const a = node(editor, 'Client', 100, 100)
+		const b = node(editor, 'API', 400, 200)
+		const c = node(editor, 'Database', 700, 300)
+		const first = connect(editor, a, b)
+		const second = connect(editor, b, c)
+		editor.select(a, b, c)
+		const bindings = [...first.bindingIds, ...second.bindingIds].map((id) => editor.getBinding(id))
+		assert.equal(canLayoutSelectedDiagram(editor, 'compact'), true)
+		assert.equal(layoutSelectedDiagram(editor), true)
+		const wide = [a, b, c].map((id) => editor.getShape(id))
+		const wideSpan = editor.getShapePageBounds(c)!.maxX - editor.getShapePageBounds(a)!.x
+		assert.equal(layoutSelectedDiagram(editor, 'compact'), true)
+		const compactSpan = editor.getShapePageBounds(c)!.maxX - editor.getShapePageBounds(a)!.x
+		assert.ok(compactSpan < wideSpan - 100)
+		assert.ok(editor.getShapePageBounds(a)!.maxX + 72 < editor.getShapePageBounds(b)!.x)
+		assert.deepEqual([...first.bindingIds, ...second.bindingIds].map((id) => editor.getBinding(id)), bindings)
+		const after = [a, b, c].map((id) => editor.getShape(id))
+		editor.undo()
+		assert.deepEqual([a, b, c].map((id) => editor.getShape(id)), wide)
+		editor.redo()
+		assert.deepEqual([a, b, c].map((id) => editor.getShape(id)), after)
+	} finally { editor.dispose() }
+})
+
+test('radial layout keeps a stable center and separates variable-size nodes', () => {
+	const editor = new TestEditor()
+	try {
+		const center = node(editor, 'Hub', 320, 260, 200, 110)
+		const leaves = [
+			node(editor, 'A', 20, 50, 170, 100),
+			node(editor, 'B', 90, 200, 190, 120),
+			node(editor, 'C', 90, 420, 150, 90),
+			node(editor, 'D', 700, 420, 210, 130),
+		]
+		const connections = leaves.map((id) => connect(editor, center, id))
+		const originalCenter = editor.getShapePageBounds(center)!.center
+		const before = [center, ...leaves].map((id) => editor.getShape(id))
+		editor.select(center, ...leaves)
+		assert.equal(canLayoutSelectedDiagram(editor, 'radial'), true)
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), true)
+		assert.deepEqual(editor.getShapePageBounds(center)!.center, originalCenter)
+		const boxes = [center, ...leaves].map((id) => editor.getShapePageBounds(id)!)
+		for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+			assert.ok(boxes[i].maxX + 24 <= boxes[j].x || boxes[j].maxX + 24 <= boxes[i].x
+				|| boxes[i].maxY + 24 <= boxes[j].y || boxes[j].maxY + 24 <= boxes[i].y,
+				'radial nodes should retain a usable gap')
+		}
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), false, 'repeat is stable')
+		assert.ok(connections.every(({ bindingIds }) => bindingIds.every((id) => !!editor.getBinding(id))))
+		editor.undo()
+		assert.deepEqual([center, ...leaves].map((id) => editor.getShape(id)), before)
+	} finally { editor.dispose() }
+})
+
+test('radial layout remains bounded on large connected selections', () => {
+	const editor = new TestEditor()
+	try {
+		const ids = Array.from({ length: 17 }, (_, index) => node(editor, String(index), index * 180, 120))
+		for (let index = 1; index < ids.length; index++) connect(editor, ids[0], ids[index])
+		editor.select(...ids)
+		assert.equal(canLayoutSelectedDiagram(editor, 'radial'), false)
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), false)
+	} finally { editor.dispose() }
+})
+
+test('radial arrangement centers a chain on its middle node', () => {
+	const editor = new TestEditor()
+	try {
+		const a = node(editor, 'Client', 100, 200)
+		const b = node(editor, 'API', 400, 200)
+		const c = node(editor, 'Database', 700, 200)
+		connect(editor, a, b); connect(editor, b, c)
+		const middle = editor.getShapePageBounds(b)!.center
+		editor.select(a, b, c)
+		assert.equal(layoutSelectedDiagram(editor, 'radial'), true)
+		assert.deepEqual(editor.getShapePageBounds(b)!.center, middle)
+		const boxes = [a, b, c].map((id) => editor.getShapePageBounds(id)!)
+		assert.ok(boxes[0].maxX < boxes[2].x || boxes[2].maxX < boxes[0].x
+			|| boxes[0].maxY < boxes[2].y || boxes[2].maxY < boxes[0].y)
+	} finally { editor.dispose() }
+})

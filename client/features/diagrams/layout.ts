@@ -4,11 +4,12 @@ type NodeShape = Extract<TLShape, { type: 'geo' | 'note' }>
 type Bounds = { x: number; y: number; w: number; h: number }
 type LayoutNode = { shape: NodeShape; bounds: Bounds }
 type Edge = { from: TLShapeId; to: TLShapeId }
-export type DiagramLayoutDirection = 'horizontal' | 'vertical' | 'tree'
+export type DiagramLayoutDirection = 'horizontal' | 'vertical' | 'tree' | 'radial' | 'compact'
 
 const HORIZONTAL_GAP = 160
 const VERTICAL_GAP = 64
 const MAX_NODES = 200
+const MAX_RADIAL_NODES = 16
 
 function isNode(shape: TLShape): shape is NodeShape {
 	return shape.type === 'geo' || shape.type === 'note'
@@ -66,6 +67,7 @@ function selectedGraph(editor: Editor): { nodes: LayoutNode[]; edges: Edge[] } |
 export function canLayoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDirection = 'horizontal'): boolean {
 	const graph = selectedGraph(editor)
 	return graph !== null && (direction !== 'tree' || treeRoot(graph.nodes, graph.edges) !== null)
+		&& (direction !== 'radial' || graph.nodes.length <= MAX_RADIAL_NODES)
 }
 
 function treeRoot(nodes: readonly LayoutNode[], edges: readonly Edge[]): TLShapeId | null {
@@ -123,9 +125,66 @@ function treePositions(nodes: readonly LayoutNode[], edges: readonly Edge[]): Ma
 	return result
 }
 
+/** Put bound nodes on graph-distance rings around a stable source node. */
+function radialPositions(nodes: readonly LayoutNode[], edges: readonly Edge[]): Map<TLShapeId, { x: number; y: number }> {
+	const byId = new Map(nodes.map((node) => [node.shape.id, node]))
+	const incoming = new Map(nodes.map(({ shape }) => [shape.id, 0]))
+	const outgoing = new Map(nodes.map(({ shape }) => [shape.id, 0]))
+	const neighbors = new Map(nodes.map(({ shape }) => [shape.id, new Set<TLShapeId>()]))
+	for (const { from, to } of edges) {
+		incoming.set(to, incoming.get(to)! + 1)
+		outgoing.set(from, outgoing.get(from)! + 1)
+		neighbors.get(from)!.add(to)
+		neighbors.get(to)!.add(from)
+	}
+	// A central hub should stay put, even when a chain's authored arrow starts
+	// at an endpoint. Prefer fan-out only when graph degree is otherwise tied.
+	const byAuthoredOrder = (a: TLShapeId, b: TLShapeId) =>
+		byId.get(a)!.shape.index.localeCompare(byId.get(b)!.shape.index) || a.localeCompare(b)
+	const root = [...byId.keys()].sort((a, b) => neighbors.get(b)!.size - neighbors.get(a)!.size
+		|| outgoing.get(b)! - outgoing.get(a)!
+		|| incoming.get(a)! - incoming.get(b)!
+		|| byAuthoredOrder(a, b))[0]
+	const rings: TLShapeId[][] = [[root]]
+	const seen = new Set<TLShapeId>([root])
+	for (let depth = 0; depth < rings.length; depth++) {
+		const next: TLShapeId[] = []
+		for (const id of rings[depth]) for (const neighbor of [...neighbors.get(id)!].sort(byAuthoredOrder)) {
+			if (seen.has(neighbor)) continue
+			seen.add(neighbor)
+			next.push(neighbor)
+		}
+		if (next.length) rings.push(next)
+	}
+	const rootBounds = byId.get(root)!.bounds
+	const center = { x: rootBounds.x + rootBounds.w / 2, y: rootBounds.y + rootBounds.h / 2 }
+	const result = new Map<TLShapeId, { x: number; y: number }>([[root, { x: rootBounds.x, y: rootBounds.y }]])
+	let previousRadius = 0
+	let previousHalfDiagonal = Math.hypot(rootBounds.w, rootBounds.h) / 2
+	for (const [index, ring] of rings.entries()) {
+		if (!index) continue
+		const maxDiagonal = Math.max(...ring.map((id) => { const box = byId.get(id)!.bounds; return Math.hypot(box.w, box.h) }))
+		const halfDiagonal = maxDiagonal / 2
+		const chordRadius = ring.length > 1 ? (maxDiagonal + 32) / (2 * Math.sin(Math.PI / ring.length)) : 0
+		const radius = Math.max(previousRadius + previousHalfDiagonal + halfDiagonal + 80, chordRadius)
+		for (const [position, id] of ring.entries()) {
+			const box = byId.get(id)!.bounds
+			const angle = -Math.PI / 2 + position * 2 * Math.PI / ring.length
+			result.set(id, { x: center.x + radius * Math.cos(angle) - box.w / 2,
+				y: center.y + radius * Math.sin(angle) - box.h / 2 })
+		}
+		previousRadius = radius
+		previousHalfDiagonal = halfDiagonal
+	}
+	return result
+}
+
 function positions(nodes: readonly LayoutNode[], edges: readonly Edge[], direction: DiagramLayoutDirection) {
 	if (direction === 'tree') return treePositions(nodes, edges)
+	if (direction === 'radial') return radialPositions(nodes, edges)
 	const vertical = direction === 'vertical'
+	const primaryGap = direction === 'compact' ? 96 : HORIZONTAL_GAP
+	const secondaryGap = direction === 'compact' ? 40 : VERTICAL_GAP
 	const byId = new Map(nodes.map((node) => [node.shape.id, node]))
 	const byOriginalPosition = (left: TLShapeId, right: TLShapeId) => {
 		const a = byId.get(left)!.bounds, b = byId.get(right)!.bounds
@@ -170,10 +229,10 @@ function positions(nodes: readonly LayoutNode[], edges: readonly Edge[], directi
 		for (const id of layer) {
 			const node = byId.get(id)!
 			result.set(id, vertical ? { x: secondary, y: primary } : { x: primary, y: secondary })
-			secondary += (vertical ? node.bounds.w : node.bounds.h) + VERTICAL_GAP
+			secondary += (vertical ? node.bounds.w : node.bounds.h) + secondaryGap
 			maxPrimarySize = Math.max(maxPrimarySize, vertical ? node.bounds.h : node.bounds.w)
 		}
-		primary += maxPrimarySize + HORIZONTAL_GAP
+		primary += maxPrimarySize + primaryGap
 	}
 	return result
 }
@@ -201,7 +260,8 @@ function clearOfOtherShapes(editor: Editor, nodes: readonly LayoutNode[], positi
 /** Move selected page-level geo/note nodes into connected layers. Native arrow bindings follow the nodes. */
 export function layoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDirection = 'horizontal'): boolean {
 	const graph = selectedGraph(editor)
-	if (!graph || (direction === 'tree' && !treeRoot(graph.nodes, graph.edges))) return false
+	if (!graph || (direction === 'tree' && !treeRoot(graph.nodes, graph.edges))
+		|| (direction === 'radial' && graph.nodes.length > MAX_RADIAL_NODES)) return false
 	const next = positions(graph.nodes, graph.edges, direction)
 	const shiftY = clearOfOtherShapes(editor, graph.nodes, next)
 	const changes = graph.nodes.flatMap(({ shape, bounds }) => {

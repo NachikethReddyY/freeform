@@ -20,9 +20,9 @@ test('arrange diagram is searchable only when a diagram can be laid out', () => 
 	const unavailable = availableCommandDefinitions(false)
 	const available = availableCommandDefinitions(true)
 	assert.equal(filterCommands(unavailable, 'auto layout').length, 0)
-	assert.deepEqual(filterCommands(available, 'auto layout').map((command) => command.id), ['arrange-diagram', 'arrange-vertical'])
-	assert.equal(unavailable.length + 2, available.length)
-	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => !['arrange-diagram', 'arrange-vertical'].includes(command.id)).map((command) => command.id))
+	assert.deepEqual(filterCommands(available, 'auto layout').map((command) => command.id), ['arrange-diagram', 'arrange-vertical', 'arrange-compact'])
+	assert.equal(unavailable.length + 3, available.length)
+	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => !['arrange-diagram', 'arrange-vertical', 'arrange-compact'].includes(command.id)).map((command) => command.id))
 })
 
 test('vertical and tree arrangement follow selection eligibility', () => {
@@ -30,6 +30,11 @@ test('vertical and tree arrangement follow selection eligibility', () => {
 	assert.deepEqual(filterCommands(availableCommandDefinitions(true, false, false, false), 'arrange vertical').map((command) => command.id), ['arrange-vertical'])
 	assert.equal(filterCommands(availableCommandDefinitions(true, false, false, false), 'arrange tree').length, 0)
 	assert.deepEqual(filterCommands(availableCommandDefinitions(true, false, false, true), 'arrange tree').map((command) => command.id), ['arrange-tree'])
+})
+
+test('radial arrangement follows its own bounded eligibility', () => {
+	assert.equal(filterCommands(availableCommandDefinitions(true, false, false, false, false), 'arrange radial').length, 0)
+	assert.deepEqual(filterCommands(availableCommandDefinitions(true, false, false, false, true), 'arrange radial').map((command) => command.id), ['arrange-radial'])
 })
 
 test('connected node directions appear only for an eligible selected node', () => {

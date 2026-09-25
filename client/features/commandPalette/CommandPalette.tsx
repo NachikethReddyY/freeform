@@ -28,19 +28,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const [query, setQuery] = useState('')
 	const [active, setActive] = useState(0)
 	const [error, setError] = useState('')
-	const { readonly, selected, canArrangeDiagram, canArrangeTree, canConnectNode, canCreateNode } = useValue('palette availability', () => ({
+	const { readonly, selected, canArrangeDiagram, canArrangeTree, canArrangeRadial, canConnectNode, canCreateNode } = useValue('palette availability', () => ({
 		readonly: editor.getIsReadonly(),
 		selected: editor.getSelectedShapeIds().length,
 		canArrangeDiagram: canLayoutSelectedDiagram(editor),
 		canArrangeTree: canLayoutSelectedDiagram(editor, 'tree'),
+		canArrangeRadial: canLayoutSelectedDiagram(editor, 'radial'),
 		canConnectNode: canAddConnectedNode(editor),
 		canCreateNode: !editor.getIsReadonly() && editor.getCurrentPageShapeIds().size < editor.options.maxShapesPerPage,
 	}), [editor])
-	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram, canConnectNode, canCreateNode, canArrangeTree).flatMap<PaletteCommand>((definition) => {
+	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram, canConnectNode, canCreateNode, canArrangeTree, canArrangeRadial).flatMap<PaletteCommand>((definition) => {
 		if (definition.kind === 'custom') {
 			if (definition.id === 'arrange-diagram') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor) } }]
 			if (definition.id === 'arrange-vertical') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'vertical') } }]
 			if (definition.id === 'arrange-tree') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'tree') } }]
+			if (definition.id === 'arrange-radial') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'radial') } }]
+			if (definition.id === 'arrange-compact') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'compact') } }]
 			if (definition.id === 'create-node') return [{ ...definition, onSelect: () => { createStandaloneNode(editor) } }]
 			const technicalKind = technicalKindById[definition.id]
 			if (technicalKind) return [{ ...definition, onSelect: () => { createStandaloneNode(editor, technicalKind) } }]
@@ -51,7 +54,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 		const native = definition.kind === 'tool' ? tools[definition.id] : actions[definition.id]
 		if (!native || (readonly && !native.readonlyOk) || (definition.id === 'zoom-to-selection' && selected === 0)) return []
 		return [{ ...definition, onSelect: () => native.onSelect('dialog'), kbd: native.kbd }]
-	}), [actions, tools, editor, readonly, selected, canArrangeDiagram, canArrangeTree, canConnectNode, canCreateNode])
+	}), [actions, tools, editor, readonly, selected, canArrangeDiagram, canArrangeTree, canArrangeRadial, canConnectNode, canCreateNode])
 	const matches = filterCommands(commands, query)
 	const selectedIndex = Math.min(active, Math.max(0, matches.length - 1))
 
