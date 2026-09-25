@@ -1,0 +1,11 @@
+# Local owner access
+
+FreeForm's current authentication is for a single owner on `localhost`, `127.0.0.1`, or `[::1]`. It is not a hosted multi-user identity system. The first person or process with access to the loopback service can create the owner account, so keep the development server bound to loopback and do not expose its port through a tunnel or reverse proxy.
+
+`GET /api/me` reports whether setup or sign-in is needed. First-run `POST /api/register` requires a 12–256 character password and `claimExistingBoards: true`; that explicit action places every existing local room under the new owner's gate without changing room records. Registration is one-time and does not erase boards. `POST /api/login` creates a seven-day, opaque, host-only `HttpOnly; SameSite=Strict` cookie. `POST /api/logout` deletes the stored session hash and clears the cookie. After logout, an open room or presentation WebSocket closes on its next application message. Browser requests require a matching Origin for mutations; cross-site requests are rejected.
+
+Credentials, sessions, and agent-token hashes live in the `AuthDurableObject` SQLite store, separate from board Durable Objects. Passwords use PBKDF2-SHA-256 with a random salt and 210,000 iterations. Failed logins are limited to five attempts in a 15-minute window. The local runtime's persisted Durable Object state is the account database; preserve or back it up along with rooms. There is no password recovery flow yet.
+
+An authenticated owner can use `GET /api/mcp/tokens` to list token IDs and creation times, `POST /api/mcp/tokens` to create one token, and `DELETE /api/mcp/tokens` with `{ "id": "..." }` to revoke it. Creation returns the raw `ffm_` token once; only its SHA-256 hash is stored. At most eight tokens can be active. A bearer token works only on loopback `/api/rooms/*` board-summary and diagram-proposal APIs, not on sync WebSockets, assets, the AI gateway, or account routes. Keep the token in a private local credential file outside the repository.
+
+Uploaded board assets require the owner session for both reads and writes. Authenticated responses use `private, no-store` and have no wildcard CORS header. A presentation remote uses a separate opaque session link that carries slide position and pointer controls only; the presenter socket requires a live owner session.

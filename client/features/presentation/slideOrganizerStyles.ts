@@ -47,6 +47,22 @@ export const slideOrganizerStyles = `
 }
 .freeform-slide-organizer__header strong { font-size: 12px; font-weight: 600; }
 .freeform-slide-organizer__header span { margin-left: 5px; color: var(--tl-color-text-3); font-weight: 400; }
+.freeform-slide-organizer__create {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	width: calc(100% - 10px);
+	min-height: 32px;
+	margin: 6px 5px 4px;
+	padding: 0 8px;
+	border: 1px solid var(--tl-color-divider);
+	border-radius: 5px;
+	background: var(--tl-color-muted-1);
+	color: var(--tl-color-text);
+	text-align: left;
+}
+.freeform-slide-organizer__create:hover:not(:disabled) { background: var(--tl-color-muted-2); }
+.freeform-slide-organizer__create svg { width: 15px; height: 15px; }
 .freeform-slide-organizer__icon {
 	display: grid;
 	place-items: center;
@@ -62,7 +78,7 @@ export const slideOrganizerStyles = `
 .freeform-slide-organizer__icon:hover:not(:disabled) { background: var(--tl-color-muted-1); color: var(--tl-color-text); }
 .freeform-slide-organizer__icon svg { width: 16px; height: 16px; }
 .freeform-slide-organizer__list {
-	max-height: min(480px, calc(100vh - 112px));
+	max-height: min(480px, calc(100vh - 154px));
 	margin: 0;
 	padding: 5px;
 	list-style: none;
@@ -71,6 +87,7 @@ export const slideOrganizerStyles = `
 .freeform-slide-organizer__row {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: 5px;
 	min-height: 56px;
 	padding: 3px;
@@ -121,7 +138,32 @@ export const slideOrganizerStyles = `
 	color: var(--tl-color-text);
 	font: inherit;
 }
-.freeform-slide-organizer__actions { display: flex; flex: none; gap: 0; }
+.freeform-slide-organizer__menu {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 2px;
+	width: calc(100% - 20px);
+	margin-left: 20px;
+	padding: 3px;
+	border: 1px solid var(--tl-color-divider);
+	border-radius: 5px;
+	background: var(--tl-color-panel);
+}
+.freeform-slide-organizer__menu button {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	min-height: 28px;
+	padding: 3px 5px;
+	border: 0;
+	border-radius: 4px;
+	background: transparent;
+	color: var(--tl-color-text);
+	text-align: left;
+}
+.freeform-slide-organizer__menu button:hover:not(:disabled) { background: var(--tl-color-muted-1); }
+.freeform-slide-organizer__menu svg { width: 14px; height: 14px; }
 .freeform-slide-organizer__empty { margin: 0; padding: 15px 12px; color: var(--tl-color-text-2); line-height: 1.45; }
 @media (max-width: 480px) {
 	.freeform-slide-organizer { right: 8px; }

@@ -11,7 +11,7 @@ import {
 	type ImageFormat,
 	type ImageScope,
 } from './nativeBoard'
-import { exportExcalidrawPage, type InterchangeReport } from './excalidraw/interchange'
+import { type InterchangeReport } from './excalidraw/interchange'
 import { convertExcalidrawToNativeJson } from './excalidraw/nativeFile'
 import './BoardFiles.css'
 
@@ -112,18 +112,13 @@ export function BoardFiles({ editor }: { editor: Editor }) {
 		} finally { setBusy('') }
 	}
 
-	const runExport = async (kind: 'native' | 'excalidraw' | ImageFormat) => {
+	const runExport = async (kind: 'native' | ImageFormat) => {
 		setFeedback(null)
 		setBusy('Preparing download…')
 		try {
 			const base = filenameBase(roomId)
 			if (kind === 'native') {
-				download(await exportNativeBoard(editor), `${base}.json`)
-			} else if (kind === 'excalidraw') {
-				const result = exportExcalidrawPage(editor)
-				download(new Blob([result.json], { type: 'application/json' }), `${base}.excalidraw`)
-				setFeedback({ text: `Downloaded ${result.report.convertedElements} elements${result.report.skippedElements ? ` · ${result.report.skippedElements} skipped` : ''}.`, error: false, report: result.report })
-				return
+				download(await exportNativeBoard(editor), `${base}.tldr`)
 			} else {
 				download(await exportImageBlob(editor, kind, scope), `${base}${scope === 'selection' ? '-selection' : ''}.${kind}`)
 			}
@@ -197,11 +192,7 @@ export function BoardFiles({ editor }: { editor: Editor }) {
 			}} />
 			<button type="button" className="freeform-board-files-action" disabled={Boolean(busy)} onClick={() => { void runExport('native') }}>
 				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0 4-4m-4 4-4-4M4 17v3h16v-3" /></svg>
-				<span>Download board <small>.json</small></span>
-			</button>
-			<button type="button" className="freeform-board-files-action" disabled={Boolean(busy) || !counts.page} onClick={() => { void runExport('excalidraw') }}>
-				<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18l6-12 4 8 3-5 3 9M7 15h10" /></svg>
-				<span>Download Excalidraw <small>.excalidraw</small></span>
+				<span>Download FreeForm board <small>.tldr</small></span>
 			</button>
 			<div className="freeform-board-files-divider" />
 			<div className="freeform-board-files-scope" role="group" aria-label="Image export area">

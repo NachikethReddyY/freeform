@@ -1,19 +1,20 @@
-import { useEditor, useStylePanelContext, useValue, DefaultDashStyle, DefaultSizeStyle, GeoShapeGeoStyle, getArrowInfo, type TLArrowShape, type TLGeoShape, type TLLineShape } from 'tldraw'
+import { useEditor, useStylePanelContext, useValue, DefaultDashStyle, DefaultSizeStyle, GeoShapeGeoStyle, StylePanelButtonPicker, getArrowInfo, type TLArrowShape, type TLGeoShape, type TLLineShape } from 'tldraw'
 import { curvePointFromMeta, withCurvePoint } from './arrowCurve'
 import { ROUNDED_RECTANGLE, isRectangleGeo } from './roundedRectangle'
 import { getDefaultSloppiness, getSloppiness, setDefaultSloppiness, withSloppiness, type Sloppiness } from './sloppiness'
+import { preserveStrokeWidth, resolvedStrokeWidth, strokeWidthForLevel, withStrokeWidth, type StrokeWidthLevel, type StrokeWidthShape } from './strokeWidth'
 import './strokeControls.css'
 
 type StrokeShape = TLLineShape | TLGeoShape
 type ControlOption<T> = { value: T; label: string; path: string }
 
-function ControlRow<T extends string | number>({ title, options, value, onChange }: {
-	title: string; options: readonly ControlOption<T>[]; value: T | null; onChange: (value: T) => void
+function ControlRow<T extends string | number>({ title, options, value, onChange, disabled = false }: {
+	title: string; options: readonly ControlOption<T>[]; value: T | null; onChange: (value: T) => void; disabled?: boolean
 }) {
-	return <fieldset className="freeform-stroke-control">
+	return <fieldset className={`freeform-stroke-control${title === 'Stroke width' ? ' freeform-stroke-control--width' : ''}`}>
 		<legend>{title}</legend>
 		<div className="freeform-stroke-control__choices">
-			{options.map((option) => <button key={option.value} type="button" aria-label={`${title} — ${option.label}`}
+			{options.map((option) => <button key={option.value} type="button" aria-label={`${title} — ${option.label}`} disabled={disabled}
 				aria-pressed={value === option.value} title={option.label} onClick={() => onChange(option.value)}>
 				<svg viewBox="0 0 32 32" aria-hidden="true"><path d={option.path} /></svg>
 			</button>)}
@@ -25,7 +26,63 @@ const widths = [
 	{ value: 's', label: 'Thin', path: 'M7 16h18' },
 	{ value: 'm', label: 'Medium', path: 'M7 16h18' },
 	{ value: 'l', label: 'Bold', path: 'M7 16h18' },
+	{ value: 'xl', label: 'Heavy', path: 'M7 16h18' },
 ] as const
+
+const textSizes = [
+	{ value: 's', icon: 'size-small' },
+	{ value: 'm', icon: 'size-medium' },
+	{ value: 'l', icon: 'size-large' },
+	{ value: 'xl', icon: 'size-extra-large' },
+] as const
+
+function isStrokeWidthShape(shape: { type: string }): shape is StrokeWidthShape {
+	return shape.type === 'geo' || shape.type === 'line' || shape.type === 'arrow'
+}
+
+export function FreeformStrokeWidthPicker() {
+	const editor = useEditor()
+	const selected = useValue('freeform stroke width shapes', () => editor.getSelectedShapes(), [editor])
+	const themeWidth = editor.getCurrentTheme().strokeWidth
+	const shapes = selected.filter(isStrokeWidthShape)
+	if (!shapes.length) return null
+	const currentWidth = shapes.length
+		? shapes.every((shape) => resolvedStrokeWidth(shape, themeWidth) === resolvedStrokeWidth(shapes[0], themeWidth))
+			? resolvedStrokeWidth(shapes[0], themeWidth) : null
+		: null
+	const active = widths.find((option) => currentWidth === strokeWidthForLevel(option.value, themeWidth))?.value ?? null
+	return <div className="freeform-stroke-controls" aria-disabled={editor.getIsReadonly()}>
+		<ControlRow<StrokeWidthLevel> title="Stroke width" options={widths} value={active} disabled={editor.getIsReadonly()}
+			onChange={(level) => {
+			const width = strokeWidthForLevel(level, editor.getCurrentTheme().strokeWidth)
+			editor.run(() => {
+				if (editor.isIn('select') && shapes.length) editor.updateShapes(shapes.map((shape) => ({
+					id: shape.id, type: shape.type, meta: withStrokeWidth(shape, width).meta,
+				})))
+			})
+		}} />
+	</div>
+}
+
+export function FreeformTextSizePicker() {
+	const editor = useEditor()
+	const { styles, onValueChange } = useStylePanelContext()
+	const size = styles.get(DefaultSizeStyle)
+	if (!size) return null
+	return <StylePanelButtonPicker title="Text size" uiType="size" style={DefaultSizeStyle} items={textSizes} value={size}
+		onValueChange={(style, value) => {
+			if (editor.isIn('select')) {
+				const shapes = editor.getSelectedShapes().filter(isStrokeWidthShape)
+				if (shapes.length) {
+					const themeWidth = editor.getCurrentTheme().strokeWidth
+					editor.run(() => editor.updateShapes(shapes.map((shape) => ({
+						id: shape.id, type: shape.type, meta: preserveStrokeWidth(shape, themeWidth).meta,
+					}))))
+				}
+			}
+			onValueChange(style, value)
+		}} />
+}
 const dashes = [
 	{ value: 'solid', label: 'Solid', path: 'M5 16h22' },
 	{ value: 'dashed', label: 'Dashed', path: 'M5 16h4m4 0h5m4 0h5' },
@@ -49,9 +106,7 @@ const edges = [
 export function FreeformStrokeControls({ kind }: { kind: 'line' | 'rectangle' | 'arrow' }) {
 	const editor = useEditor()
 	const { styles, onValueChange } = useStylePanelContext()
-	const sizeStyle = styles.get(DefaultSizeStyle)
 	const dashStyle = styles.get(DefaultDashStyle)
-	const size = sizeStyle?.type === 'shared' ? sizeStyle.value : null
 	const dash = dashStyle?.type === 'shared' ? dashStyle.value : null
 	const selection = useValue('freeform stroke controls', () => editor.getSelectedShapes(), [editor])
 	const strokeShapes = selection.filter((shape): shape is StrokeShape => shape.type === 'line' || (shape.type === 'geo' && isRectangleGeo(shape.props.geo)))
@@ -90,7 +145,6 @@ export function FreeformStrokeControls({ kind }: { kind: 'line' | 'rectangle' | 
 		})))
 	}
 	return <div className="freeform-stroke-controls" aria-disabled={readonly}>
-		<ControlRow<'s' | 'm' | 'l'> title="Stroke width" options={widths} value={size === 'xl' ? 'l' : size === 's' || size === 'm' || size === 'l' ? size : null} onChange={(value) => onValueChange(DefaultSizeStyle, value)} />
 		<ControlRow<'solid' | 'dashed' | 'dotted'> title="Stroke style" options={dashes} value={dash === 'draw' ? 'solid' : dash === 'solid' || dash === 'dashed' || dash === 'dotted' ? dash : null} onChange={(value) => onValueChange(DefaultDashStyle, value === 'solid' && commonSlop !== 0 ? 'draw' : value)} />
 		{kind !== 'arrow' && <ControlRow title="Sloppiness" options={roughness} value={commonSlop} onChange={changeSloppiness} />}
 		{kind === 'rectangle' && <ControlRow title="Edges" options={edges} value={isRectangleGeo(commonEdge ?? '') ? commonEdge : null} onChange={(value) => onValueChange(GeoShapeGeoStyle, value)} />}

@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement } from 'react'
+import { Children, cloneElement, isValidElement, useId } from 'react'
 import {
 	ArrowShapeUtil,
 	Box,
@@ -18,6 +18,7 @@ import {
 } from 'tldraw'
 import { curvePointFromMeta, curveThroughPoint, openArrowheadWings, withCurvePoint } from './arrowCurve'
 import { getCustomColor, getCustomFill } from './colors'
+import { getStrokeWidth } from './strokeWidth'
 
 function curvePath(util: FreeformArrowShapeUtil, shape: TLArrowShape) {
 	const control = curvePointFromMeta(shape)
@@ -74,11 +75,19 @@ function arrowheadPath(shape: TLArrowShape, at: 'start' | 'end', point: { x: num
 	}
 }
 
+export function arrowBodyClipPath(bounds: Box, label: Box) {
+	return `M ${bounds.left - 100} ${bounds.top - 100} L ${bounds.right + 100} ${bounds.top - 100} L ${bounds.right + 100} ${bounds.bottom + 100} L ${bounds.left - 100} ${bounds.bottom + 100} Z `
+		+ `M ${label.left} ${label.top} L ${label.left} ${label.bottom} L ${label.right} ${label.bottom} L ${label.right} ${label.top} Z`
+}
+
 function CurveSvg({ util, shape, colorMode }: { util: FreeformArrowShapeUtil; shape: TLArrowShape; colorMode?: 'light' | 'dark' }) {
+	const clipId = useId().replaceAll(':', '_')
 	const path = displayedPath(util, shape)
 	const info = getArrowInfo(util.editor, shape)
 	const control = curvePointFromMeta(shape)
 	if (!path || !info) return null
+	const geometry = util.editor.getShapeGeometry(shape)
+	const label = geometry instanceof Group2d && geometry.children[1] instanceof Rectangle2d ? geometry.children[1].bounds : null
 	const display = getDisplayValues<TLArrowShape, ArrowShapeUtilDisplayValues>(util, shape, colorMode)
 	const width = display.strokeWidth * shape.props.scale
 	const vertices = path.toGeometry().getVertices({})
@@ -89,7 +98,8 @@ function CurveSvg({ util, shape, colorMode }: { util: FreeformArrowShapeUtil; sh
 		Math.hypot(info.end.point.x - middle.x, info.end.point.y - middle.y))
 	const opts = { style: shape.props.dash, strokeWidth: width, randomSeed: shape.id }
 	return <g fill="none" stroke={display.strokeColor} color={display.strokeColor} strokeWidth={width} strokeLinecap="round" strokeLinejoin="round" pointerEvents="none">
-		{path.toSvg(opts)}
+		{label && <defs><clipPath id={clipId}><path d={arrowBodyClipPath(path.toGeometry().bounds, label)} clipRule="evenodd" /></clipPath></defs>}
+		<g clipPath={label ? `url(#${clipId})` : undefined}>{path.toSvg(opts)}</g>
 		{start && <path d={start.d} fill={start.fill} />}
 		{end && <path d={end.d} fill={end.fill} />}
 	</g>
@@ -102,11 +112,15 @@ export class FreeformArrowShapeUtil extends ArrowShapeUtil {
 			...this.options,
 			getCustomDisplayValues: (_editor, shape, theme, mode) => {
 			const hex = getCustomColor(shape)
-			return hex ? {
+			const strokeWidth = getStrokeWidth(shape)
+			return {
+				...(strokeWidth ? { strokeWidth } : {}),
+				...(hex ? {
 				strokeColor: hex,
 				fillColor: getCustomFill(hex, shape.props.fill, theme.colors[mode].solid, mode),
 				patternFillFallbackColor: getCustomFill(hex, 'solid', theme.colors[mode].solid, mode),
-			} : {}
+				} : {}),
+			}
 			},
 		}
 	}

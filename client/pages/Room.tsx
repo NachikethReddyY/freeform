@@ -34,7 +34,7 @@ import {
 } from 'tldraw'
 import { boardAssetUrls, boardThemes } from '../editor/fontTheme'
 import { CustomColorDefaults, FreeformColorPicker, freeformColorShapeUtils } from '../editor/excalidrawShapes'
-import { FreeformStrokeControls } from '../editor/excalidrawShapes/FreeformStrokeControls'
+import { FreeformStrokeControls, FreeformStrokeWidthPicker, FreeformTextSizePicker } from '../editor/excalidrawShapes/FreeformStrokeControls'
 import { FreeformBackgroundPicker } from '../editor/excalidrawShapes/FreeformBackgroundPicker'
 import { FreeformStrokeDefaults } from '../editor/excalidrawShapes/FreeformStrokeDefaults'
 import { isRectangleGeo } from '../editor/excalidrawShapes/roundedRectangle'
@@ -45,8 +45,10 @@ import { DiagramProposalPanel } from '../features/diagrams/DiagramProposalPanel'
 import { ConnectedNodeControls } from '../features/diagrams/connectedNodeControls'
 import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../features/diagrams/layout'
 import { PresentationControls } from '../features/presentation/presentation'
+import { diagramFromClipboard, type IncomingPasteDiagram } from '../features/paste/diagramPaste'
 import { BoardFiles } from '../features/portability/BoardFiles'
 import { BoardSearch } from '../features/search/SearchPanel'
+import { AIChatPanel } from '../features/ai/AIChatPanel'
 import { getBookmarkPreview } from '../getBookmarkPreview'
 import { multiplayerAssetStore } from '../multiplayerAssetStore'
 
@@ -123,7 +125,7 @@ function BoardPresentationControls() {
 	const editor = useEditor()
 	const actions = useActions()
 	const history = useValue('freeform history', () => ({ undo: editor.getCanUndo(), redo: editor.getCanRedo() }), [editor])
-	return <div className="freeform-bottom-controls">
+	return <><div className="freeform-bottom-controls">
 		<BoardZoomPanel />
 		<div className="freeform-history-controls" role="group" aria-label="History">
 			<button type="button" aria-label="Undo" title="Undo" disabled={!history.undo} onClick={() => actions.undo.onSelect('navigation-zone')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h10a6 6 0 0 1 6 6" /></svg></button>
@@ -132,7 +134,7 @@ function BoardPresentationControls() {
 		<PresentationControls editor={editor} />
 		<BoardSearch editor={editor} />
 		<BoardFiles editor={editor} />
-	</div>
+	</div><AIChatPanel /></>
 }
 
 function BoardZoomPanel() {
@@ -205,12 +207,18 @@ function FreeformStylePanel() {
 			: selected.every((shape) => shape.type === 'line') ? 'line'
 				: selected.every((shape) => shape.type === 'geo' && isRectangleGeo(shape.props.geo)) ? 'rectangle' : null
 		: tool === 'arrow' || tool === 'line' ? tool : tool === 'geo' && isRectangleGeo(geo) ? 'rectangle' : null
+	const supportsTextSize = selectedCount
+		? selected.some((shape) => shape.type === 'geo' || shape.type === 'arrow' || shape.type === 'text' || shape.type === 'note')
+		: tool === 'geo' || tool === 'arrow' || tool === 'text' || tool === 'note'
+	const supportsStrokeWidth = selected.some((shape) => shape.type === 'geo' || shape.type === 'arrow' || shape.type === 'line')
 	return <DefaultStylePanel>
 		<StyleGroup title={isText ? 'Color' : 'Stroke'}><FreeformColorPicker /></StyleGroup>
 		{showGeometryBackground && <StyleGroup title="Background"><FreeformBackgroundPicker /></StyleGroup>}
 		{!isText && <StyleGroup title="Fill"><FreeformFillPicker /></StyleGroup>}
+		{supportsStrokeWidth && <FreeformStrokeWidthPicker />}
 		{strokeKind ? <FreeformStrokeControls kind={strokeKind} /> : !isText && <StyleGroup title="Stroke style"><StylePanelDashPicker /></StyleGroup>}
-		<StyleGroup title={isText ? 'Font size' : 'Size'}><StylePanelSizePicker /></StyleGroup>
+		{supportsTextSize ? <StyleGroup title="Text size"><FreeformTextSizePicker /></StyleGroup>
+			: <StyleGroup title="Size"><StylePanelSizePicker /></StyleGroup>}
 		<StyleGroup title="Opacity"><StylePanelOpacityPicker /></StyleGroup>
 		{isText && <StyleGroup title="Text"><StylePanelFontPicker /><StylePanelTextAlignPicker /><StylePanelLabelAlignPicker /></StyleGroup>}
 		{!isText && <section className="freeform-style-group freeform-style-group--shape"><StylePanelGeoShapePicker /><StylePanelArrowheadPicker /><StylePanelSplinePicker /></section>}
@@ -233,6 +241,7 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 	const editor = useEditor()
 	const [panel, setPanel] = useState<'style' | 'diagrams'>('style')
 	const [open, setOpen] = useState(true)
+	const [incoming, setIncoming] = useState<(IncomingPasteDiagram & { id: string }) | undefined>()
 	const styleContext = useValue('freeform style context', () => ({
 		selected: editor.getSelectedShapeIds().length > 0,
 		selectionKey: editor.getSelectedShapeIds().join(','),
@@ -243,9 +252,21 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 	const showPanel = open && (panel === 'diagrams' || hasStyleSettings)
 	useEffect(() => {
 		if (!hasStyleSettings) return
+		setIncoming(undefined)
 		setPanel('style')
 		setOpen(true)
 	}, [hasStyleSettings, styleContext.tool, styleContext.selectionKey])
+	useEffect(() => {
+		const onDiagramPaste = (event: Event) => {
+			setIncoming((event as CustomEvent<IncomingPasteDiagram & { id: string }>).detail)
+			setPanel('diagrams')
+			setOpen(true)
+		}
+		const win = editor.getContainer().ownerDocument.defaultView
+		if (!win) return
+		win.addEventListener('freeform:paste-diagram', onDiagramPaste)
+		return () => win.removeEventListener('freeform:paste-diagram', onDiagramPaste)
+	}, [editor])
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (!event.altKey || !event.shiftKey || event.metaKey || event.ctrlKey || event.defaultPrevented || event.repeat) return
@@ -253,7 +274,7 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 			if (editor.getEditingShapeId() || editor.menus.hasAnyOpenMenus() || !editor.user.getAreKeyboardShortcutsEnabled()) return
 			switch (event.code) {
 			case 'KeyD': setPanel('diagrams'); setOpen(true); break
-			case 'KeyS': setPanel('style'); setOpen(true); break
+			case 'KeyS': setIncoming(undefined); setPanel('style'); setOpen(true); break
 			case 'KeyB': setOpen((wasOpen) => !wasOpen); break
 			default: return
 			}
@@ -268,7 +289,7 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 		{styleHost && createPortal(<div className={`freeform-left-shell tl-theme__${darkMode ? 'dark' : 'light'}`} data-open={open} data-panel={panel}>
 			{showPanel && <div className="freeform-left-panel">
 				<div className="freeform-panel-body">
-					{panel === 'style' ? <FreeformStylePanel /> : <DiagramProposalPanel editor={editor} roomId={roomId} onClose={() => setPanel('style')} />}
+					{panel === 'style' ? <FreeformStylePanel /> : <DiagramProposalPanel editor={editor} roomId={roomId} incoming={incoming} onClose={() => { setIncoming(undefined); setPanel('style') }} />}
 				</div>
 			</div>}
 		</div>, styleHost)}
@@ -310,7 +331,17 @@ export function Room() {
 				components={boardComponents}
 				overrides={boardOverrides}
 				themes={boardThemes}
-				options={{ deepLinks: true }}
+				options={{ deepLinks: true, onClipboardPasteRaw: (info) => {
+					if (info.source !== 'native-event') return
+					const diagram = diagramFromClipboard(info.clipboardData)
+					if (!diagram) return
+					const win = info.editor.getContainer().ownerDocument.defaultView
+					if (!win) return
+					win.dispatchEvent(new CustomEvent('freeform:paste-diagram', {
+						detail: { ...diagram, id: crypto.randomUUID() },
+					}))
+					return false
+				} }}
 				onMount={(editor) => {
 					// when the editor is ready, we need to register our bookmark unfurling service
 					editor.registerExternalAssetHandler('url', getBookmarkPreview)

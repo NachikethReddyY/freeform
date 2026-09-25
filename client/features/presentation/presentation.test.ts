@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { MessagePort } from 'node:worker_threads'
 import type { Editor, TLFrameShape } from 'tldraw'
 import {
 	PresentationController,
@@ -12,7 +13,11 @@ import {
 	renamePresentationFrame,
 	requestPresentationFullscreen,
 } from './presentation'
-import { getSlidePreviewExportOptions } from './slideOrganizer'
+import { createPresentationSlide, getSlidePreviewExportOptions } from './slideOrganizer'
+
+for (const handle of (process as NodeJS.Process & { _getActiveHandles(): unknown[] })._getActiveHandles()) {
+	if (handle instanceof MessagePort) handle.unref()
+}
 
 function frame(id: string, x: number, y: number, parentId = 'page:current') {
 	return {
@@ -157,6 +162,69 @@ test('slide preview uses a legible light export at a sufficient internal size', 
 	assert.equal(options.background, true)
 	assert.equal(options.padding, 0)
 	assert.ok(640 * options.scale >= 190, 'frame is exported with enough detail for the thumbnail')
+})
+
+test('creating a slide inserts a native frame after the selected slide and saves its order', () => {
+	const first = frame('shape:first', 0, 0)
+	const second = frame('shape:second', 0, 500)
+	const shapes: TLFrameShape[] = [first, second]
+	let page = { id: 'page:current', meta: { freeformPresentationOrder: [second.id, first.id], unrelated: 'kept' } }
+	let selected: string[] = [first.id]
+	const zoomed: string[] = []
+	const editor = {
+		getIsReadonly: () => false,
+		getCurrentPageId: () => page.id,
+		getCurrentPage: () => page,
+		getCurrentPageShapes: () => shapes,
+		getSelectedShapeIds: () => selected,
+		getShapePageBounds: (id: string) => { const found = shapes.find((shape) => shape.id === id); return found && { x: found.x, y: found.y, w: found.props.w, h: found.props.h, maxX: found.x + found.props.w, maxY: found.y + found.props.h } },
+		getViewportPageBounds: () => ({ center: { x: 100, y: 100 } }),
+		canCreateShapes: () => true,
+		markHistoryStoppingPoint: () => 'mark',
+		run: (task: () => void) => task(),
+		createShape: (partial: TLFrameShape) => { shapes.push(partial) },
+		getShape: (id: string) => shapes.find((shape) => shape.id === id),
+		updatePage: (partial: typeof page) => { page = { ...page, ...partial } },
+		select: (id: string) => { selected = [id] },
+		zoomToBounds: (bounds: { x: number }) => { zoomed.push(String(bounds.x)) },
+	} as unknown as Editor
+
+	const id = createPresentationSlide(editor)
+	assert.ok(id)
+	const created = shapes.find((shape) => shape.id === id)!
+	assert.equal(created.type, 'frame')
+	assert.equal(created.props.name, 'Slide 3')
+	assert.deepEqual({ x: created.x, y: created.y, w: created.props.w, h: created.props.h }, { x: 720, y: 0, w: 640, h: 360 })
+	assert.deepEqual(page.meta.freeformPresentationOrder, [second.id, first.id, id])
+	assert.equal(page.meta.unrelated, 'kept')
+	assert.deepEqual(selected, [id])
+	assert.deepEqual(zoomed, ['720'])
+})
+
+test('creating the first slide uses the viewport and readonly mode blocks creation', () => {
+	let created: TLFrameShape | undefined
+	let readonly = true
+	const editor = {
+		getIsReadonly: () => readonly,
+		getCurrentPageId: () => 'page:current',
+		getCurrentPage: () => ({ id: 'page:current', meta: {} }),
+		getCurrentPageShapes: () => created ? [created] : [],
+		getSelectedShapeIds: () => [],
+		getViewportPageBounds: () => ({ center: { x: 1000, y: 1000 } }),
+		canCreateShapes: () => true,
+		markHistoryStoppingPoint: () => 'mark',
+		run: (task: () => void) => task(),
+		createShape: (partial: TLFrameShape) => { created = partial },
+		getShape: (id: string) => created?.id === id ? created : undefined,
+		updatePage: () => undefined,
+		select: () => undefined,
+		getShapePageBounds: () => ({ x: 680, y: 820 }),
+		zoomToBounds: () => undefined,
+	} as unknown as Editor
+	assert.equal(createPresentationSlide(editor), null)
+	readonly = false
+	assert.ok(createPresentationSlide(editor))
+	assert.deepEqual({ x: created?.x, y: created?.y, w: created?.props.w, h: created?.props.h }, { x: 680, y: 820, w: 640, h: 360 })
 })
 
 test('presenter follows saved order and keeps the current slide when order changes', () => {

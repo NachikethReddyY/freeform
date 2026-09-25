@@ -1,6 +1,7 @@
 import { DiagramSchema, type Diagram } from '../../../../shared/diagram'
 
 export type StarterId = 'flowchart' | 'mind-map' | 'erd' | 'sequence' | 'architecture'
+	| 'api-stack' | 'data-model' | 'request-flow'
 export interface Starter { id: StarterId; title: string; diagram: Diagram }
 
 const node = (id: string, kind: 'rectangle' | 'ellipse' | 'diamond', label: string, x: number, y: number, w = 160, h = 88) =>
@@ -71,6 +72,37 @@ export const STARTERS: readonly Starter[] = [
 				node('worker', 'rectangle', 'Worker', 540, 0, 170, 100),
 				node('database', 'rectangle', 'Database', 540, 210, 170, 100)],
 			edges: [edge('request', 'client', 'api'), edge('job', 'api', 'worker'), edge('store', 'api', 'database')],
+		}) },
+	{
+		id: 'api-stack', title: 'API stack', diagram: DiagramSchema.parse({ title: 'API stack',
+			nodes: [node('browser', 'rectangle', 'Browser', 0, 120, 170, 88),
+				node('route', 'rectangle', 'API route', 250, 120, 170, 88),
+				node('service', 'rectangle', 'Service', 500, 120, 170, 88),
+				node('database', 'rectangle', 'Database', 780, 0, 170, 88),
+				node('queue', 'rectangle', 'Job queue', 780, 240, 170, 88)],
+			edges: [edge('http', 'browser', 'route', 'HTTP'), edge('call', 'route', 'service'),
+				edge('query', 'service', 'database', 'read/write'), edge('publish', 'service', 'queue', 'enqueue')],
+		}) },
+	{
+		id: 'data-model', title: 'Data model', diagram: DiagramSchema.parse({ title: 'Data model',
+			nodes: [node('user', 'rectangle', 'User\nid · email', 0, 0, 170, 110),
+				node('project', 'rectangle', 'Project\nid · user_id', 270, 0, 170, 110),
+				node('task', 'rectangle', 'Task\nid · project_id', 540, 0, 170, 110),
+				node('comment', 'rectangle', 'Comment\nid · task_id', 810, 0, 170, 110)],
+			edges: [edge('projects', 'user', 'project', '1 : many'),
+				edge('tasks', 'project', 'task', '1 : many'), edge('comments', 'task', 'comment', '1 : many')],
+		}) },
+	{
+		id: 'request-flow', title: 'Request flow', diagram: DiagramSchema.parse({ title: 'Request flow',
+			nodes: [node('client', 'rectangle', 'Client', 0, 130, 150, 88),
+				node('route', 'rectangle', 'API route', 200, 130, 160, 88),
+				node('validate', 'diamond', 'Valid?', 410, 115, 150, 118),
+				node('database', 'rectangle', 'Database', 640, 0, 150, 88),
+				node('success', 'rectangle', '200 OK', 850, 0, 140, 88),
+				node('badRequest', 'rectangle', '400 Bad Request', 640, 260, 150, 88)],
+			edges: [edge('request', 'client', 'route'), edge('check', 'route', 'validate'),
+				edge('valid', 'validate', 'database', 'valid\n'), edge('invalid', 'validate', 'badRequest', '\ninvalid'),
+				edge('result', 'database', 'success')],
 		}) },
 ] as const
 

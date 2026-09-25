@@ -10,6 +10,7 @@ declare namespace Cloudflare {
 		TLDRAW_BUCKET: R2Bucket;
 		ASSETS: Fetcher;
 		TLDRAW_DURABLE_OBJECT: DurableObjectNamespace<import("./worker/worker").TldrawDurableObject>;
+		AUTH_DURABLE_OBJECT: DurableObjectNamespace<import("./worker/worker").AuthDurableObject>;
 	}
 }
 interface Env extends Cloudflare.Env {}

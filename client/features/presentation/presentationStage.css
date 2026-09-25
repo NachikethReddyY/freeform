@@ -1,0 +1,160 @@
+.freeform-presentation-stage {
+	position: fixed;
+	inset: 0;
+	z-index: 10000;
+	overflow: hidden;
+	background: #fff;
+	color: #24242a;
+	font-family: 'Geist Sans', sans-serif;
+	touch-action: none;
+}
+
+.freeform-presentation-stage--dark { background: #0d0d0d; color: #f5f5f7; }
+
+.freeform-presentation-stage__world {
+	position: absolute;
+	inset: 0;
+	transform-origin: 0 0;
+	transition: transform 440ms cubic-bezier(.22, .75, .26, 1);
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.freeform-presentation-stage__world { transition-duration: 0ms; }
+}
+
+.freeform-presentation-stage__slide {
+	position: absolute;
+	overflow: hidden;
+}
+
+.freeform-presentation-stage__slide img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.freeform-presentation-stage__slide img.freeform-presentation-stage__fallback { filter: invert(1) hue-rotate(180deg); }
+
+.freeform-presentation-stage__laser {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	pointer-events: none;
+}
+
+.freeform-presentation-stage__laser-trail { animation: freeform-laser-fade 460ms ease-out forwards; }
+.freeform-presentation-stage__laser-trail-glow { stroke: #809aff; stroke-width: 12; stroke-linecap: round; opacity: .55; filter: blur(6px); }
+.freeform-presentation-stage__laser-trail-core { stroke: #f9fbff; stroke-width: 3.5; stroke-linecap: round; filter: drop-shadow(0 0 2px #607eff); }
+.freeform-presentation-stage__laser-glow { fill: #9baeff; opacity: .48; filter: blur(7px); }
+.freeform-presentation-stage__laser-dot { fill: #fff; stroke: #687bdf; stroke-width: 2; filter: drop-shadow(0 0 4px #809aff); }
+.freeform-presentation-stage__laser-pulse { fill: none; stroke: #a5b6ff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: freeform-laser-pulse 420ms ease-out forwards; }
+@keyframes freeform-laser-fade { to { opacity: 0; } }
+@keyframes freeform-laser-pulse { to { transform: scale(4); opacity: 0; } }
+
+.freeform-presentation-stage__controls,
+.freeform-presentation-stage__reveal {
+	position: absolute;
+	z-index: 2;
+	bottom: max(16px, env(safe-area-inset-bottom));
+	background: rgb(255 255 255 / 94%);
+	color: #252633;
+	border: 1px solid #dedee6;
+	box-shadow: 0 8px 28px #16162724;
+	backdrop-filter: blur(8px);
+}
+
+.freeform-presentation-stage__controls {
+	right: max(16px, env(safe-area-inset-right));
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	max-width: min(94vw, 580px);
+	min-height: 46px;
+	padding: 4px;
+	border-radius: 10px;
+}
+
+.freeform-presentation-stage--dark .freeform-presentation-stage__controls,
+.freeform-presentation-stage--dark .freeform-presentation-stage__reveal { background: rgb(35 35 42 / 94%); color: #f5f5f7; border-color: #4a4a55; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__controls button:hover,
+.freeform-presentation-stage--dark .freeform-presentation-stage__reveal:hover { background: #3e3e4a; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__controls button[aria-pressed='true'] { background: #4b4b64; color: #fff; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__title { color: #c2c2cc; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__divider { background: #575764; }
+
+.freeform-presentation-stage__controls button,
+.freeform-presentation-stage__reveal {
+	display: grid;
+	place-items: center;
+	flex: none;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 7px;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.freeform-presentation-stage__controls button:hover,
+.freeform-presentation-stage__controls button[aria-pressed='true'],
+.freeform-presentation-stage__reveal:hover { background: #ededf6; }
+.freeform-presentation-stage__controls button:disabled { opacity: .33; cursor: default; }
+.freeform-presentation-stage__controls button:focus-visible,
+.freeform-presentation-stage__reveal:focus-visible { outline: 2px solid #6258cc; outline-offset: 1px; }
+.freeform-presentation-stage__controls svg,
+.freeform-presentation-stage__reveal svg { width: 19px; height: 19px; }
+.freeform-presentation-stage__controls button[aria-pressed='true'] { color: #403e70; }
+
+.freeform-presentation-stage__count {
+	min-width: 48px;
+	padding: 0 3px;
+	font-size: 12px;
+	font-weight: 600;
+	text-align: center;
+	white-space: nowrap;
+}
+
+.freeform-presentation-stage__title {
+	min-width: 0;
+	max-width: 190px;
+	overflow: hidden;
+	padding: 0 6px;
+	color: #595a66;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.freeform-presentation-stage__divider { flex: none; width: 1px; height: 20px; margin: 0 3px; background: #dddde5; }
+.freeform-presentation-stage__reveal { right: 16px; border-radius: 9px; }
+
+.freeform-presentation-stage__remote-popover {
+	position: absolute;
+	right: 40px;
+	bottom: calc(100% + 10px);
+	width: min(330px, calc(100vw - 32px));
+	padding: 14px;
+	border: 1px solid #dedee6;
+	border-radius: 10px;
+	background: #fff;
+	box-shadow: 0 12px 36px #1113;
+	font-size: 13px;
+}
+.freeform-presentation-stage__remote-popover p { margin: 6px 0 10px; color: #666977; }
+.freeform-presentation-stage__remote-popover input { width: 100%; padding: 8px; border: 1px solid #c9cbd4; border-radius: 6px; background: #f5f5f8; color: #343540; font: inherit; }
+.freeform-presentation-stage__remote-popover div { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+.freeform-presentation-stage__remote-popover button { width: auto; min-width: 80px; padding: 0 9px; border: 1px solid #d5d6df; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__remote-popover { background: #292a32; border-color: #4a4a55; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__remote-popover p { color: #b3b4c2; }
+.freeform-presentation-stage--dark .freeform-presentation-stage__remote-popover input { background: #1d1e24; border-color: #565864; color: #f2f2f5; }
+
+@media (max-width: 580px) {
+	.freeform-presentation-stage__controls { max-width: calc(100vw - 16px); }
+	.freeform-presentation-stage__title { display: none; }
+	.freeform-presentation-stage__controls button { width: 32px; height: 36px; }
+}

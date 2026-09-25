@@ -7,6 +7,8 @@ import { DiagramText } from './DiagramText'
 import { parseMermaidFlowchart } from './mermaid'
 import { applyNativeDiagram } from './native'
 import { DiagramLibrarySection } from './library/DiagramLibrarySection'
+import { parseOpenApiJson } from './importers/openapi'
+import { parseSqlSchema } from '../../../shared/sqlDiagram'
 import './diagrams.css'
 
 const ProposalSchema = z.object({
@@ -15,7 +17,23 @@ const ProposalSchema = z.object({
 }).strict()
 const QueueSchema = z.object({ proposals: z.array(ProposalSchema).max(20) }).strict()
 const ClaimResponseSchema = z.object({ proposal: ProposalSchema, claimId: z.string() }).strict()
-const example = 'flowchart LR\n  A[Idea] --> B{Ready?}\n  B -->|yes| C[Build]\n  B -->|no| A'
+const examples = {
+	mermaid: 'flowchart LR\n  A[Idea] --> B{Ready?}\n  B -->|yes| C[Build]\n  B -->|no| A',
+	openapi: '{\n  "openapi": "3.1.0",\n  "info": { "title": "Shop API" },\n  "paths": { "/users": { "get": { "summary": "List users" } } }\n}',
+	sql: 'CREATE TABLE users (id UUID PRIMARY KEY, email TEXT);\nCREATE TABLE orders (id UUID PRIMARY KEY, user_id UUID REFERENCES users(id));',
+} as const
+type ImportFormat = keyof typeof examples
+export interface IncomingDiagramCode { id: string; format: ImportFormat; source: string }
+
+function parseDiagramCode(format: ImportFormat, source: string): Diagram {
+	const fenced = /^```(?:mermaid|sql|json)?\s*\n([\s\S]*?)\n```$/i.exec(source.trim())
+	const content = fenced?.[1] ?? source
+	switch (format) {
+		case 'mermaid': return parseMermaidFlowchart(content)
+		case 'openapi': return parseOpenApiJson(content)
+		case 'sql': return parseSqlSchema(content)
+	}
+}
 
 class DiagramApiError extends Error {
 	constructor(message: string, readonly code?: string) { super(message) }
@@ -50,7 +68,7 @@ async function acknowledge(path: string, claimId: string, signal: AbortSignal) {
 
 interface LocalDraft { id: string; pageId: TLPageId; diagram: Diagram }
 
-export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Editor; roomId: string; onClose?: () => void }) {
+export function DiagramProposalPanel({ editor, roomId, incoming, onClose }: { editor: Editor; roomId: string; incoming?: IncomingDiagramCode | null; onClose?: () => void }) {
 	const fieldId = useId()
 	const [proposals, setProposals] = useState<DiagramProposal[]>([])
 	const [loading, setLoading] = useState(true)
@@ -58,6 +76,7 @@ export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Edit
 	const [error, setError] = useState('')
 	const [queueError, setQueueError] = useState('')
 	const [notice, setNotice] = useState('')
+	const [format, setFormat] = useState<ImportFormat>('mermaid')
 	const [source, setSource] = useState(() => sessionStorage.getItem(`wboard:mermaid:${roomId}`) ?? '')
 	const [draft, setDraft] = useState<LocalDraft | null>(null)
 	const lifetime = useRef(new AbortController())
@@ -87,6 +106,21 @@ export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Edit
 		return () => { controller.abort(); clearInterval(interval) }
 	}, [editor, roomId, refresh])
 
+	useEffect(() => {
+		if (!incoming) return
+		setFormat(incoming.format)
+		setSource(incoming.source)
+		setNotice('')
+		try {
+			const diagram = parseDiagramCode(incoming.format, incoming.source)
+			setDraft({ id: crypto.randomUUID(), pageId: editor.getCurrentPageId(), diagram })
+			setError('')
+		} catch (cause) {
+			setDraft(null)
+			setError(cause instanceof Error ? cause.message : 'Could not parse the pasted diagram.')
+		}
+	}, [editor, incoming?.id])
+
 	const run = async (id: string, task: (signal: AbortSignal) => Promise<void>) => {
 		if (applying.current) return
 		applying.current = true; setBusy(id); setError(''); setNotice('')
@@ -115,8 +149,9 @@ export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Edit
 	const preview = () => {
 		try {
 			setError(''); setNotice('')
-			setDraft({ id: crypto.randomUUID(), pageId: editor.getCurrentPageId(), diagram: parseMermaidFlowchart(source) })
-		} catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not parse this flowchart.') }
+			const diagram = parseDiagramCode(format, source)
+			setDraft({ id: crypto.randomUUID(), pageId: editor.getCurrentPageId(), diagram })
+		} catch (cause) { setDraft(null); setError(cause instanceof Error ? cause.message : 'Could not parse this diagram.') }
 	}
 
 	return (
@@ -146,13 +181,20 @@ export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Edit
 				})}
 			</div>
 			<details className="wboard-diagrams-import" open={draft ? true : undefined}>
-				<summary>Mermaid flowchart</summary>
-				<label htmlFor={fieldId}>Flowchart text</label>
-				<textarea id={fieldId} spellCheck={false} rows={7} value={source} placeholder={example} maxLength={20_000} onChange={(event) => {
+				<summary>Import diagram code</summary>
+				<label htmlFor={`${fieldId}-format`}>Format</label>
+				<select id={`${fieldId}-format`} value={format} onChange={(event) => {
+					const next = event.target.value as ImportFormat
+					setFormat(next); setDraft(null); setError(''); setSource(sessionStorage.getItem(`wboard:${next}:${roomId}`) ?? '')
+					}}><option value="mermaid">Mermaid flowchart</option><option value="openapi">OpenAPI JSON</option><option value="sql">SQL schema</option></select>
+				<label htmlFor={fieldId}>{format === 'mermaid' ? 'Flowchart text' : format === 'openapi' ? 'OpenAPI document' : 'CREATE TABLE statements'}</label>
+				<textarea id={fieldId} spellCheck={false} rows={7} value={source} placeholder={examples[format]} maxLength={20_000} onChange={(event) => {
 					const value = event.target.value
-					setSource(value); setDraft(null); sessionStorage.setItem(`wboard:mermaid:${roomId}`, value)
+					setSource(value); setDraft(null); sessionStorage.setItem(`wboard:${format}:${roomId}`, value)
 				}} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); preview() } }} />
-				<p>Flowcharts only: [box], (box), ((circle)), {'{decision}'}, and --&gt; arrows. Use --&gt;|label| for labels.</p>
+				{format === 'mermaid' && <p>Flowcharts only: [box], (box), ((circle)), {'{decision}'}, and --&gt; arrows. Use --&gt;|label| for labels.</p>}
+				{format === 'openapi' && <p>OpenAPI 3.x JSON paths become editable resource and endpoint nodes.</p>}
+				{format === 'sql' && <p>CREATE TABLE and foreign keys become editable tables and connected arrows.</p>}
 				<button type="button" disabled={!source.trim() || busy !== null} onClick={preview}>Preview <kbd>⌘/Ctrl Enter</kbd></button>
 				{draft && <div className="wboard-diagrams-draft">
 					<DiagramPreview diagram={draft.diagram} />
@@ -160,8 +202,8 @@ export function DiagramProposalPanel({ editor, roomId, onClose }: { editor: Edit
 					<div className="wboard-diagrams-actions">
 						<button type="button" disabled={busy !== null} onClick={() => void run(draft.id, async () => {
 							applyNativeDiagram(editor, draft.diagram, draft.id, draft.pageId, true)
-							setDraft(null); setNotice('Flowchart added. Every node and arrow is editable.')
-						})}>Add flowchart</button>
+							setDraft(null); setNotice('Diagram added. Every node and arrow is editable.')
+						})}>Add to board</button>
 						<button type="button" onClick={() => setDraft(null)}>Cancel preview</button>
 					</div>
 				</div>}

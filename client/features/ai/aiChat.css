@@ -1,0 +1,55 @@
+.freeform-ai { position: absolute; top: 8px; right: 8px; z-index: 315; width: min(360px, calc(100vw - 16px)); color: var(--tl-color-text); pointer-events: none; font: 13px/1.45 'Geist Sans', sans-serif; }
+.freeform-ai button, .freeform-ai input, .freeform-ai select, .freeform-ai textarea, .freeform-ai-panel button, .freeform-ai-panel input, .freeform-ai-panel select, .freeform-ai-panel textarea { font: inherit; }
+.freeform-ai button, .freeform-ai-panel button { cursor: pointer; }
+.freeform-ai button:disabled, .freeform-ai-panel button:disabled { cursor: default; opacity: .5; }
+.freeform-ai :focus-visible, .freeform-ai-panel :focus-visible { outline: 2px solid var(--tl-color-selected); outline-offset: 2px; }
+.freeform-ai-trigger { display: grid; place-items: center; width: 34px; height: 34px; margin-left: auto; margin-right: 142px; border: 1px solid var(--tl-color-divider); border-radius: 7px; background: var(--tl-color-panel); color: var(--tl-color-text); box-shadow: var(--tl-shadow-2); pointer-events: auto; }
+.freeform-ai-trigger:hover, .freeform-ai-trigger[aria-expanded='true'] { background: var(--tl-color-muted-1); }
+.freeform-ai-trigger svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-ai-panel { position: fixed; top: 50px; right: 8px; z-index: 1000; display: flex; flex-direction: column; width: min(360px, calc(100vw - 16px)); height: min(660px, calc(100dvh - 58px)); overflow: hidden; border: 1px solid var(--tl-color-divider, #44444c); border-radius: 10px; background: var(--tl-color-panel, #25252b); color: var(--tl-color-text, #f5f5f7); box-shadow: 0 16px 40px #0009; pointer-events: auto; font: 13px/1.45 'Geist Sans', sans-serif; }
+.freeform-ai-panel.tl-theme__dark { --text: #f5f5f7; --background: #25252b; --gray-light: #303039; --gray-dark: #4b4b55; }
+.freeform-ai-panel.tl-theme__light { --text: #242428; --background: #fff; --gray-light: #f5f5f7; --gray-dark: #d8d8de; }
+.freeform-ai-panel[hidden] { display: none; }
+.freeform-ai-panel header { display: flex; align-items: center; justify-content: space-between; min-height: 40px; padding: 0 11px 0 13px; border-bottom: 1px solid var(--tl-color-divider); }
+.freeform-ai-panel h2 { margin: 0; font: 600 15px/1.2 'Geist Sans', sans-serif; }
+.freeform-ai-panel header button { border: 0; background: transparent; color: var(--tl-color-text-2); font-size: 20px; line-height: 1; }
+.freeform-ai-settings { flex: none; border-bottom: 1px solid var(--tl-color-divider); }
+.freeform-ai-settings summary { padding: 8px 13px; cursor: pointer; color: var(--tl-color-text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.freeform-ai-settings-fields { display: grid; gap: 8px; padding: 0 13px 12px; }
+.freeform-ai-settings label, .freeform-ai-model-line label { display: grid; gap: 4px; min-width: 0; font-size: 12px; color: var(--tl-color-text-2); }
+.freeform-ai-settings label span { color: var(--tl-color-text-3); }
+.freeform-ai-settings input, .freeform-ai-settings select, .freeform-ai-compose textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 32px; padding: 6px 8px; border: 1px solid var(--tl-color-divider); border-radius: 5px; background: var(--tl-color-low); color: var(--tl-color-text); }
+.freeform-ai-settings input { font-size: 12px; }
+.freeform-ai-model-line { display: flex; align-items: end; gap: 7px; }
+.freeform-ai-model-line label { flex: 1; }
+.freeform-ai-model-line button, .freeform-ai-compose button, .freeform-ai-diagram button { min-height: 32px; padding: 5px 9px; border: 1px solid var(--tl-color-divider); border-radius: 5px; background: var(--tl-color-low); color: var(--tl-color-text); white-space: nowrap; }
+.freeform-ai-model-line button:hover:enabled, .freeform-ai-compose button:hover:enabled, .freeform-ai-diagram button:hover:enabled { background: var(--tl-color-muted-1); }
+.freeform-ai-modes { display: flex; gap: 2px; padding: 7px 11px; border-bottom: 1px solid var(--tl-color-divider); }
+.freeform-ai-modes button { min-width: 62px; min-height: 28px; border: 0; border-radius: 5px; background: transparent; color: var(--tl-color-text-2); }
+.freeform-ai-modes button[aria-pressed='true'] { background: var(--tl-color-muted-1); color: var(--tl-color-text); }
+.freeform-ai-turns { flex: 1; min-height: 0; overflow: auto; padding: 12px 13px; overscroll-behavior: contain; }
+.freeform-ai-empty { margin: 0; color: var(--tl-color-text-2); }
+.freeform-ai-turn { padding: 0 0 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.freeform-ai-turn + .freeform-ai-turn { padding-top: 11px; border-top: 1px solid var(--tl-color-divider); }
+.freeform-ai-turn > span { color: var(--tl-color-text-3); font-size: 11px; }
+.freeform-ai-turn > p { margin: 5px 0 0; }
+.freeform-ai-turn--user > p { color: var(--tl-color-text); }
+.freeform-ai-pending, .freeform-ai-warning, .freeform-ai-error { color: var(--tl-color-text-2); }
+.freeform-ai-error { margin: 0; padding: 8px 13px; border-top: 1px solid var(--tl-color-divider); color: #ed9292; }
+.freeform-ai-notice { margin: 0; padding: 8px 13px; border-top: 1px solid var(--tl-color-divider); color: var(--tl-color-text-2); }
+.freeform-ai-diagram { display: grid; gap: 7px; margin-top: 9px; }
+.freeform-ai-diagram .wboard-diagrams-preview { height: 150px; background: var(--tl-color-low); }
+.freeform-ai-diagram .wboard-diagrams-preview rect, .freeform-ai-diagram .wboard-diagrams-preview ellipse, .freeform-ai-diagram .wboard-diagrams-preview polygon { fill: var(--tl-color-panel); }
+.freeform-ai-diagram > div { display: flex; justify-content: space-between; gap: 8px; }
+.freeform-ai-diagram small { color: var(--tl-color-text-3); }
+.freeform-ai-diagram button { justify-self: start; }
+.freeform-ai-compose { display: grid; gap: 7px; padding: 10px 12px 11px; border-top: 1px solid var(--tl-color-divider); }
+.freeform-ai-compose label { display: flex; align-items: center; gap: 6px; color: var(--tl-color-text-2); font-size: 11px; }
+.freeform-ai-compose label input { margin: 0; accent-color: var(--tl-color-selected); }
+.freeform-ai-compose textarea { min-height: 68px; max-height: 160px; resize: vertical; }
+.freeform-ai-compose > div { display: flex; justify-content: flex-end; }
+.freeform-ai-compose button[type='submit'] { background: var(--tl-color-primary); color: var(--tl-color-primary-contrast); border-color: transparent; }
+@media (max-width: 760px) { .freeform-ai-panel { height: min(620px, calc(100dvh - 58px)); } }
+@media (max-width: 500px) { .freeform-ai { top: 112px; } .freeform-ai-trigger { margin-right: 0; } .freeform-ai-panel { top: 153px; height: min(620px, calc(100dvh - 161px)); } }
+.tl-container[data-freeform-presentation='true'] .freeform-ai { display: none; }
+body:has(.tl-container[data-freeform-presentation='true']) .freeform-ai-panel { display: none; }

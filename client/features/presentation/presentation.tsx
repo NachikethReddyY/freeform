@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useReducer } from 'react'
 import type { Editor, TLFrameShape, TLShapeId } from 'tldraw'
 import { SlideOrganizer } from './slideOrganizer'
+import { PresentationStage } from './presentationStage'
 
 export const PRESENTATION_ORDER_KEY = 'freeformPresentationOrder'
 
@@ -109,10 +110,12 @@ type PresentationListener = () => void
 export class PresentationController {
 	private frames: TLFrameShape[] = []
 	private index = -1
+	private lastFrameId: TLShapeId | null = null
 	private originalCamera: ReturnType<Editor['getCamera']> | null = null
 	private originalSelection: TLShapeId[] | null = null
 	private originalReadonly: boolean | null = null
 	private ownsFullscreen = false
+	private transitionTimer: ReturnType<typeof setTimeout> | null = null
 	private readonly listeners = new Set<PresentationListener>()
 
 	constructor(private readonly editor: Editor) {}
@@ -133,6 +136,10 @@ export class PresentationController {
 		return this.frames[this.index]
 	}
 
+	get previousFrameId() {
+		return this.lastFrameId
+	}
+
 	subscribe(listener: PresentationListener) {
 		this.listeners.add(listener)
 		return () => { this.listeners.delete(listener) }
@@ -145,6 +152,7 @@ export class PresentationController {
 
 		this.frames = frames
 		this.index = 0
+		this.lastFrameId = null
 		this.originalCamera = { ...this.editor.getCamera() }
 		this.originalSelection = [...this.editor.getSelectedShapeIds()]
 		this.originalReadonly = this.editor.getInstanceState().isReadonly
@@ -195,6 +203,8 @@ export class PresentationController {
 
 	exit() {
 		if (!this.isPresenting) return false
+		if (this.transitionTimer) clearTimeout(this.transitionTimer)
+		this.transitionTimer = null
 		const container = this.editor.getContainer()
 		delete container.dataset.freeformPresentation
 		if (this.ownsFullscreen) void exitPresentationFullscreen(container)
@@ -210,6 +220,7 @@ export class PresentationController {
 		this.originalReadonly = null
 		this.frames = []
 		this.index = -1
+		this.lastFrameId = null
 		this.emit()
 		return true
 	}
@@ -225,9 +236,17 @@ export class PresentationController {
 
 	private goTo(nextIndex: number) {
 		if (!this.isPresenting || nextIndex < 0 || nextIndex >= this.frames.length) return false
+		if (nextIndex === this.index) return true
+		if (this.transitionTimer) clearTimeout(this.transitionTimer)
+		this.lastFrameId = this.currentFrame?.id ?? null
 		this.index = nextIndex
 		this.showCurrentFrame()
 		this.emit()
+		this.transitionTimer = setTimeout(() => {
+			this.lastFrameId = null
+			this.transitionTimer = null
+			this.emit()
+		}, 480)
 		return true
 	}
 
@@ -236,7 +255,7 @@ export class PresentationController {
 		if (!frame) return
 		const bounds = this.editor.getShapePageBounds(frame.id)
 		if (!bounds) return
-		this.editor.zoomToBounds(bounds, { inset: 32 })
+		this.editor.zoomToBounds(bounds, { inset: 32, animation: { duration: 440 } })
 	}
 
 	private emit() {
@@ -332,24 +351,20 @@ export function PresentationControls({ editor }: PresentationControlsProps) {
 						<path d="m10 7 5 3-5 3Z" fill="currentColor" stroke="none" />
 					</svg>
 				</button>
-				<SlideOrganizer editor={editor} />
+				<SlideOrganizer editor={editor} onPresentFrame={(frameId) => {
+					if (presentation.start()) presentation.goToFrame(frameId)
+				}} />
 			</>
 		)
 	}
 
-	const frame = presentation.currentFrame
-	const count = presentation.slideCount
-	const position = presentation.currentIndex + 1
-	const title = frame?.props.name.trim() || `Slide ${position}`
-	return (
-		<div className="freeform-presentation__shield" style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'auto' }}>
-			<div className="freeform-presentation" role="group" aria-label="Presentation controls" data-testid="presentation-controls">
-			<button type="button" onClick={() => presentation.exit()} aria-label="Exit presentation">Exit</button>
-			<button type="button" onClick={() => presentation.previous()} disabled={position <= 1} aria-label="Previous slide">Previous</button>
-			<span aria-live="polite" data-testid="presentation-position">{position} / {count}</span>
-			<span aria-live="polite" data-testid="presentation-title">{title}</span>
-			<button type="button" onClick={() => presentation.next()} disabled={position >= count} aria-label="Next slide">Next</button>
-			</div>
-		</div>
-	)
+	return <PresentationStage
+		editor={editor}
+		frames={getPresentationFrames(editor)}
+		index={presentation.currentIndex}
+		previousFrameId={presentation.previousFrameId}
+		onPrevious={() => presentation.previous()}
+		onNext={() => presentation.next()}
+		onExit={() => presentation.exit()}
+	/>
 }

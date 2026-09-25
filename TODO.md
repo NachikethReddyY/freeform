@@ -1,5 +1,43 @@
 # Freeform tasks
 
+## Geist Sans Docker dependency repair — 2026-09-25
+
+- [x] Reinstall locked dependencies into the existing Compose `node_modules` volume without touching board data. Both Geist Sans CSS files are present in the repaired volume.
+- [x] Verify Geist Sans CSS exists in the container and FreeForm loads without the Vite CSS overlay on an isolated local port. Helium rendered the board at `127.0.0.1:5175`; the stylesheet returned HTTP 200. The full build remains blocked by a pre-existing missing `worker/presentationRelay` import in `worker/presentationRelay.test.ts`.
+
+## Presentation and app chrome follow-up — 2026-09-25
+
+- [ ] Present frame contents as isolated, borderless slides with expanded white space; animate navigation based on frame positions and add compact, hideable icon controls and a laser pointer.
+- [ ] Fix first-slide blank state; add a dark slide theme, right-aligned controls, a small fading laser pointer, and a scoped same-origin presentation remote. Verify each in Safari.
+- [ ] Make the presentation dark theme seamless across the expanded slide, without darker frame-sized patches or exposed corners.
+- [x] Make the presenter remote connect across Safari and Helium windows. An isolated two-frame workspace showed Connected in Safari; Previous/Next and laser toggle changed the Helium presenter and remote, and ending presentation returned the remote to Waiting.
+- [ ] Make a short laser trail visible during pointer movement and remote gestures; replace the harsh red active state and clarify the presentation and remote icons.
+- [x] Add first-run local owner setup, password sign-in, sign-out, and session protection for board APIs. Isolated registration/login/dashboard/asset/socket checks passed; a Helium two-tab sign-out immediately gated the other open board. The live workspace remains unregistered so its owner chooses the password and claims existing boards.
+- [x] Preserve the local MCP agent workflow under the account gate: create/revoke a scoped owner token, attach it in the MCP client, and prove unauthorized access is denied while authenticated proposals still require browser review. Isolated UI and MCP smoke checks passed.
+- [x] Give the tldraw production-license notice enough width at the bottom right to remain readable, visible, and clickable without overlap. The final Helium footer crop shows the full notice clear of the help mark; the button remains in accessibility controls.
+- [ ] Add an independent stroke-width picker to the selected-shape style panel; make Size visibly change selected shape text without also changing the stroke width. Verify on the supplied geo/circle case.
+- [ ] Add an icon-led slide organizer flow for creating, ordering, renaming, and starting framed slides while preserving board data and undo.
+- [ ] Refine the dashboard layout from the supplied homepage reference: quick search/collections in the rail, clear start action and usable recent-board previews.
+- [ ] Use Geist for application menus, panels, and dashboard chrome while retaining handwritten canvas text.
+- [ ] Remove Excalidraw export from Files while preserving native `.tldr` round trips, image export, and Excalidraw import; align current-feature docs.
+- [ ] Reject SQL constraints that the ERD importer cannot represent; propagate AI Stop cancellation to the upstream provider.
+- [ ] Browser-check presentation, dashboard, Files and connector labels in one Safari work tab at desktop and narrow width; do not use Zen. Update screenshots/report, run focused checks and build, then commit, push and publish the authorized HTML report.
+
+## Ideas brief: agent and development workflows — 2026-09-25
+
+- [x] Append the smart diagramming and developer canvas priorities as section 45 of the sibling `docs/ideas.md`, keeping the original 44-theme brief intact. Updated locally outside this Git repository; no commit is claimed.
+- [x] Map the sibling `docs/ideas.md` to delivered, partial, and selected next features in `docs/feature-map.md`, with explicit evidence limits; the 749 ideas are not claimed complete.
+- [x] Add in-app AI chat with Ollama loopback/OpenAI-compatible endpoint and model choice; validated Draw results require preview and explicit Add. Endpoint/model settings are tab-session data and API keys stay in tab memory, outside board records and Git. A local mock-provider browser pass covered Load models, Ask, Draw, Add of three native shapes, and reload; real Ollama/LM Studio inference remains unverified.
+- [x] Extend local MCP with SQL ERD and OpenAPI endpoint-map proposals, preserving browser review before board mutation. The smoke path makes zero model calls.
+- [x] Add bounded SQL `CREATE TABLE` and OpenAPI 3.x JSON imports that preview editable native shapes and report unsupported input. Four recognized diagram paste previews passed a Safari browser check.
+- [x] Add recognized Mermaid, SQL, OpenAPI and arrow-chain paste previews; ordinary text and native file/image paste retain their native route. Focused paste checks passed 9/9.
+- [x] Verify the corrected **Download FreeForm board** `.tldr` action with a fresh browser export/import round trip. The menu had no Mermaid action; `Untitled board.tldr` downloaded with native MIME and three shape records, imported into a new room, and retained the three labeled shapes after hard navigation/reload. The earlier Mermaid download prototype was superseded and removed.
+- [ ] Fix imported diagram arrows that appear detached from their nodes or cross node labels; verify the corrected SQL/OpenAPI or pasted diagram in the browser after reload. See B15 in `bug.md`.
+- [x] Audit storage locations: catalog and personal blocks in browser localStorage, rooms in Durable Object SQLite, assets in R2 emulation, thumbnails in browser IndexedDB. Document the split in README and feature map.
+- [ ] Design and implement a central local database and migration, if that remains the product decision. It has not been achieved; existing boards must remain accessible.
+- [ ] Verify each new user flow in the browser at desktop and a constrained viewport, capture evaluated screenshots, run focused tests and build, update `bug.md` and feature documentation.
+- [ ] Commit and push passing checkpoints; update the authorized progress HTML and Postplan report with evidence.
+
 ## Stroke and edge control proof — 2026-09-25
 
 - [x] Verify Rounded → Sharp on a selected rectangle in the visible editor. Zen Page 6 showed the corners switch from rounded to square and the Sharp state selected; screenshots are saved locally.

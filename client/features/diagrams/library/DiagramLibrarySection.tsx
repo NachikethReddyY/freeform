@@ -13,11 +13,15 @@ const STARTER_ITEMS: { id: StarterId; label: string; icon: React.ReactNode }[] =
 	{ id: 'erd', label: 'ERD', icon: <><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/><path d="M5 5h1m-1 2h2m9 9h1m-1 2h2M9 5h7v8"/></> },
 	{ id: 'sequence', label: 'Seq', icon: <><path d="M4 3v16m7-16v16m7-16v16M4 7h13m-3-3 3 3-3 3M18 14H5m3-3-3 3 3 3"/></> },
 	{ id: 'architecture', label: 'Stack', icon: <><rect x="2" y="8" width="6" height="6" rx="1"/><rect x="15" y="2" width="6" height="6" rx="1"/><rect x="15" y="14" width="6" height="6" rx="1"/><path d="M8 11h4V5h3m-3 6v6h3"/></> },
+	{ id: 'api-stack', label: 'API', icon: <><rect x="2" y="8" width="5" height="6" rx="1"/><rect x="10" y="8" width="5" height="6" rx="1"/><rect x="18" y="3" width="3" height="5" rx="1"/><rect x="18" y="14" width="3" height="5" rx="1"/><path d="M7 11h3m5 0h2V5h1m-1 6v5h1"/></> },
+	{ id: 'data-model', label: 'Data', icon: <><rect x="2" y="4" width="5" height="14" rx="1"/><rect x="9" y="4" width="5" height="14" rx="1"/><rect x="16" y="4" width="5" height="14" rx="1"/><path d="M3.5 7h2m5 0h2m5 0h2M7 11h2m5 0h2"/></> },
+	{ id: 'request-flow', label: 'Req', icon: <><rect x="2" y="8" width="5" height="6" rx="1"/><path d="M7 11h5m-2-2 2 2-2 2m2-2h3m0 0 3-5m-3 5 3 5"/><circle cx="19" cy="5" r="2"/><circle cx="19" cy="17" r="2"/></> },
 ]
 
 const starterNames: Record<StarterId, string> = {
 	flowchart: 'flowchart', 'mind-map': 'mind map', erd: 'entity relationship',
-	sequence: 'sequence', architecture: 'architecture',
+	sequence: 'sequence', architecture: 'architecture', 'api-stack': 'API stack',
+	'data-model': 'data model', 'request-flow': 'request flow',
 }
 
 function Icon({ children }: { children: React.ReactNode }) {

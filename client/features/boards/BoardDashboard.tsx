@@ -9,6 +9,7 @@ import {
 } from './boardIndex'
 import { filterBoardsByName, openBoardFromDashboard } from './dashboardModel'
 import { useBoardPreview } from './useBoardPreview'
+import { AccountTools } from '../auth/AccountTools'
 import './BoardDashboard.css'
 
 function formatOpenedAt(timestamp: number): string {
@@ -305,17 +306,26 @@ export function BoardDashboard() {
 					<img src="/freeform-logo.svg" alt="" />
 					<strong>FreeForm</strong>
 				</Link>
-				<div className="board-dashboard-sidebar-heading">
-					<h2>Collections</h2>
-					<button type="button" aria-label="Add collection" title="Add collection" onClick={() => setCreatingCollection(true)}>+</button>
+				<div className="board-dashboard-search">
+					<label htmlFor="board-dashboard-search">Search board names</label>
+					<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m13 13 4 4" /></svg>
+					<input
+						id="board-dashboard-search"
+						type="search"
+						placeholder="Quick search"
+						value={query}
+						onChange={(event) => updateQuery(event.target.value)}
+					/>
 				</div>
-				<nav className="board-dashboard-collections" aria-label="Collections">
-					<button type="button" className={selectedCollectionId === 'all' ? 'is-selected' : ''} aria-current={selectedCollectionId === 'all' ? 'page' : undefined} onClick={() => updateCollectionFilter('all')}>
-						<span>All boards</span><small>{boards.length}</small>
+				<nav className="board-dashboard-collections" aria-label="Board navigation">
+					<button type="button" className={`board-dashboard-home${selectedCollectionId === 'all' ? ' is-selected' : ''}`} aria-current={selectedCollectionId === 'all' ? 'page' : undefined} onClick={() => updateCollectionFilter('all')}>
+						<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="2.5" width="15" height="15" rx="2" /><path d="M8 2.5v15M8 8h9.5" /></svg>
+						<span>Dashboard</span><small>{boards.length}</small>
 					</button>
-					<button type="button" className={selectedCollectionId === 'trash' ? 'is-selected' : ''} aria-current={selectedCollectionId === 'trash' ? 'page' : undefined} onClick={() => updateCollectionFilter('trash')}>
-						<span>Trash</span><small>{trashBoards.length}</small>
-					</button>
+					<div className="board-dashboard-sidebar-heading">
+						<h2>Collections</h2>
+						<button type="button" aria-label="Add collection" title="Add collection" onClick={() => setCreatingCollection(true)}>+</button>
+					</div>
 					{collections.map((collection) => <div className="board-dashboard-collection-row" key={collection.id}>
 						{renamingCollectionId === collection.id
 							? <CollectionEditor collection={collection} onSave={(title) => saveCollectionName(collection.id, title)} onCancel={() => setRenamingCollectionId(null)} />
@@ -326,28 +336,29 @@ export function BoardDashboard() {
 								<button type="button" className="board-dashboard-rename-collection" aria-label={`Rename ${collection.title}`} title={`Rename ${collection.title}`} onClick={() => setRenamingCollectionId(collection.id)}>···</button>
 							</>}
 					</div>)}
+					<button type="button" className={`board-dashboard-trash${selectedCollectionId === 'trash' ? ' is-selected' : ''}`} aria-current={selectedCollectionId === 'trash' ? 'page' : undefined} onClick={() => updateCollectionFilter('trash')}>
+						<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 5h13M7 5V3.5h6V5m-8 0 .7 11.5h8.6L15 5M8 8v5.5m4-5.5v5.5" /></svg>
+						<span>Trash</span><small>{trashBoards.length}</small>
+					</button>
 				</nav>
 				{creatingCollection && <CollectionEditor onSave={saveNewCollection} onCancel={() => setCreatingCollection(false)} />}
+				<AccountTools />
 			</aside>
 
 			<main className="board-dashboard-main">
 				<div className="board-dashboard-title-row">
-					<div>
-						<p className="board-dashboard-eyebrow">{inTrash ? 'Recovery' : selectedCollection ? 'Collection' : 'Workspace'}</p>
-						<h1>{inTrash ? 'Trash' : selectedCollection?.title ?? 'All boards'}</h1>
+					<h1>{inTrash ? 'Trash' : selectedCollection?.title ?? 'Dashboard'}</h1>
+					{!inTrash && <button type="button" className="board-dashboard-start" onClick={startBoard}>
+						<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m3 17 3.7-.8L16.5 6.4a2 2 0 0 0-2.9-2.9L3.8 13.3 3 17Z" /><path d="m12.7 4.4 2.9 2.9" /></svg>
+						<span>Start drawing</span>
+					</button>}
+				</div>
+				<div className="board-dashboard-section-row">
+					<div className="board-dashboard-section-heading">
+						<h2>{query.trim() ? 'Search results' : inTrash ? 'Deleted boards' : selectedCollection ? 'Boards' : 'Recently opened'}</h2>
+						<p className="board-dashboard-count">{filteredBoards.length} {filteredBoards.length === 1 ? 'board' : 'boards'}</p>
 					</div>
 					<div className="board-dashboard-content-actions">
-						<div className="board-dashboard-search">
-							<label htmlFor="board-dashboard-search">Search board names</label>
-							<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" /><path d="m13 13 4 4" /></svg>
-							<input
-								id="board-dashboard-search"
-								type="search"
-								placeholder="Search board names"
-								value={query}
-								onChange={(event) => updateQuery(event.target.value)}
-							/>
-						</div>
 						{selectionMode && selectedBoardIds.size > 0 && <div className="board-dashboard-selection-toolbar" aria-label="Selected board actions">
 							<span>{selectedBoardIds.size} selected</span>
 							{selectedBoardIds.size === 1 && <button type="button" onClick={openSelectedBoard}>Open</button>}
@@ -358,7 +369,6 @@ export function BoardDashboard() {
 							</select>
 						</div>}
 						<div className="board-dashboard-count-and-select">
-							<p className="board-dashboard-count">{filteredBoards.length} {filteredBoards.length === 1 ? 'board' : 'boards'}</p>
 							{!inTrash && <button type="button" aria-label={selectionMode ? 'Done selecting boards' : 'Select boards'} aria-pressed={selectionMode} onClick={() => selectionMode ? leaveSelectionMode() : setSelectionMode(true)}>
 								<svg className="board-dashboard-select-icon" viewBox="0 0 20 20" aria-hidden="true">
 									{selectionMode ? <><rect x="2.5" y="2.5" width="15" height="15" rx="3" /><path d="m6 10 2.5 2.5L14 7" /></> : <rect x="3" y="3" width="14" height="14" rx="3" />}
@@ -370,10 +380,6 @@ export function BoardDashboard() {
 				</div>
 
 				<div className="board-dashboard-grid">
-					{!inTrash && <button type="button" className="board-dashboard-new-card" onClick={startBoard}>
-						<span aria-hidden="true">+</span>
-						<strong>New board</strong>
-					</button>}
 					{filteredBoards.map((board) => <BoardPreviewCard
 						key={board.id}
 						board={board}

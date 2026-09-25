@@ -14,7 +14,9 @@ import { DurableObject } from 'cloudflare:workers'
 import { AutoRouter, error, IRequest } from 'itty-router'
 import { PageIdSchema } from '../shared/diagram'
 import { DiagramProposalQueue, DiagramRequestError, diagramErrorResponse } from './diagramProposals'
+import { isPresentationAttachment, parsePresentationConnection, parsePresentationMessage, presentationSessionTag } from './presentationRelay'
 import { endCurrentSocketSession, getSocketAttachment, recoverSocketSessions, saveConnectedSession, type SocketAttachment } from './socketRecovery'
+import { hashSessionToken, parseSessionCookie } from './auth'
 
 // add custom shapes and bindings here if needed:
 // The client registers this custom geo through GeoShapeUtil.configure; the sync schema needs the same value.
@@ -70,12 +72,12 @@ export class TldrawDurableObject extends DurableObject {
 				clientTimeout: Infinity,
 				onSessionSnapshot: (sessionId, snapshot) => {
 					const ws = this.sessionIdToWs.get(sessionId)
-					if (ws) ws.serializeAttachment({ sessionId, snapshot })
+					if (ws) ws.serializeAttachment({ sessionId, snapshot, ownerSessionHash: getSocketAttachment(ws)?.ownerSessionHash })
 				},
 			})
 
 			// Resume any sessions that survived hibernation
-			recoverSocketSessions(this.ctx.getWebSockets(), this.newlyAccepted, (ws, attachment) => {
+			recoverSocketSessions(this.ctx.getWebSockets().filter((socket) => !isPresentationAttachment(socket.deserializeAttachment())), this.newlyAccepted, (ws, attachment) => {
 				this.room!.handleSocketResume({
 					sessionId: attachment.sessionId,
 					socket: ws,
@@ -89,6 +91,7 @@ export class TldrawDurableObject extends DurableObject {
 
 	private readonly router = AutoRouter({ catch: (e) => error(e) })
 		.get('/api/connect/:roomId', (request) => this.handleConnect(request))
+		.get('/api/presentation/:roomId/:sessionId', (request) => this.handlePresentationConnect(request))
 		.get('/api/rooms/:roomId/board', (request) => this.readBoard(request))
 		.all('/api/rooms/:roomId/proposals', (request) => this.proposals().handle(request))
 		.all('/api/rooms/:roomId/proposals/:id', (request) => this.proposals().handle(request, request.params.id))
@@ -140,10 +143,44 @@ export class TldrawDurableObject extends DurableObject {
 		return this.router.fetch(request)
 	}
 
+	private async handlePresentationConnect(request: IRequest): Promise<Response> {
+		let connection: ReturnType<typeof parsePresentationConnection>
+		try { connection = parsePresentationConnection(request, request.params.roomId, request.params.sessionId) }
+		catch { return Response.json({ error: 'Invalid presentation connection' }, { status: 403, headers: { 'Cache-Control': 'no-store' } }) }
+		const tag = presentationSessionTag(connection.sessionId)
+		const peers = this.ctx.getWebSockets(tag).filter((socket) => isPresentationAttachment(socket.deserializeAttachment()))
+		if (connection.role === 'host' && peers.some((socket) => {
+			const attachment = socket.deserializeAttachment()
+			return isPresentationAttachment(attachment) && attachment.role === 'host'
+		})) return Response.json({ error: 'Presentation already active' }, { status: 409 })
+		if (connection.role === 'remote' && peers.filter((socket) => {
+			const attachment = socket.deserializeAttachment()
+			return isPresentationAttachment(attachment) && attachment.role === 'remote'
+		}).length >= 8) return Response.json({ error: 'Too many remotes' }, { status: 429 })
+		const session = parseSessionCookie(request.headers.get('cookie'))
+		const ownerSessionHash = session && connection.role === 'host' ? await hashSessionToken(session) : undefined
+		if (connection.role === 'host' && !await this.hasLiveOwnerSession(ownerSessionHash)) return Response.json({ error: 'Sign in to present' }, { status: 401 })
+		const { 0: clientSocket, 1: serverSocket } = new WebSocketPair()
+		this.ctx.acceptWebSocket(serverSocket, [tag])
+		serverSocket.serializeAttachment({ kind: 'presentation', ...connection, ...(ownerSessionHash ? { ownerSessionHash } : {}) })
+		return new Response(null, { status: 101, webSocket: clientSocket })
+	}
+
+	private async hasLiveOwnerSession(hash: string | undefined): Promise<boolean> {
+		if (!hash) return false
+		const auth = this.env.AUTH_DURABLE_OBJECT.get(this.env.AUTH_DURABLE_OBJECT.idFromName('local-owner'))
+		const response = await auth.fetch('http://auth.local/internal/session-hash', { headers: { 'x-freeform-session-hash': hash } })
+		return response.ok
+	}
+
 	// Handle new WebSocket connection requests
 	async handleConnect(request: IRequest) {
 		const sessionId = request.query.sessionId as string
 		if (!sessionId) return error(400, 'Missing sessionId')
+		const ownerSession = parseSessionCookie(request.headers.get('cookie'))
+		if (!ownerSession) return error(401, 'Sign in to sync this board')
+		const ownerSessionHash = await hashSessionToken(ownerSession)
+		if (!await this.hasLiveOwnerSession(ownerSessionHash)) return error(401, 'Sign in to sync this board')
 
 		// Create the websocket pair for the client
 		const { 0: clientWebSocket, 1: serverWebSocket } = new WebSocketPair()
@@ -153,7 +190,7 @@ export class TldrawDurableObject extends DurableObject {
 
 		// Store sessionId in attachment immediately so we can identify this socket
 		// after hibernation, before the connect handshake completes.
-		const attachment: SocketAttachment = { sessionId, snapshot: null }
+		const attachment: SocketAttachment = { sessionId, snapshot: null, ownerSessionHash }
 		serverWebSocket.serializeAttachment(attachment)
 
 		// Connect to the room. The first webSocketMessage from the client will
@@ -169,15 +206,41 @@ export class TldrawDurableObject extends DurableObject {
 	// --- WebSocket Hibernation API handlers ---
 
 	override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+		const presentation = ws.deserializeAttachment()
+		if (isPresentationAttachment(presentation)) {
+			if (presentation.role === 'host' && !await this.hasLiveOwnerSession(presentation.ownerSessionHash)) {
+				ws.close(1008, 'Owner session expired')
+				return
+			}
+			const packet = parsePresentationMessage(message, presentation)
+			if (!packet) return
+			const toRole = presentation.role === 'host' ? 'remote' : 'host'
+			const payload = JSON.stringify(packet)
+			for (const peer of this.ctx.getWebSockets(presentationSessionTag(presentation.sessionId))) {
+				if (peer === ws) continue
+				const target = peer.deserializeAttachment()
+				if (!isPresentationAttachment(target) || target.sessionId !== presentation.sessionId || target.role !== toRole) continue
+				if (target.role === 'host' && !await this.hasLiveOwnerSession(target.ownerSessionHash)) {
+					peer.close(1008, 'Owner session expired')
+					continue
+				}
+				try { peer.send(payload) } catch { /* A closed peer will be pruned by the runtime. */ }
+			}
+			return
+		}
 		const attachment = getSocketAttachment(ws)
 		if (!attachment) return
+		if (!await this.hasLiveOwnerSession(attachment.ownerSessionHash)) {
+			ws.close(1008, 'Owner session expired')
+			return
+		}
 
 		const room = this.getOrCreateRoom()
 		if (this.sessionIdToWs.get(attachment.sessionId) !== ws) return
 		room.handleSocketMessage(attachment.sessionId, message)
 		// The SDK's onSessionSnapshot waits 5 seconds. Workerd may hibernate or
 		// restart before then, leaving an accepted socket with no session to resume.
-		if (!attachment.snapshot && saveConnectedSession(ws, attachment.sessionId, () => room.getSessionSnapshot(attachment.sessionId))) {
+		if (!attachment.snapshot && saveConnectedSession(ws, attachment.sessionId, () => room.getSessionSnapshot(attachment.sessionId), attachment.ownerSessionHash)) {
 			this.newlyAccepted.delete(ws)
 		}
 	}
@@ -191,6 +254,18 @@ export class TldrawDurableObject extends DurableObject {
 	}
 
 	private handleWebSocketEnd(ws: WebSocket, method: 'handleSocketClose' | 'handleSocketError') {
+		const presentation = ws.deserializeAttachment()
+		if (isPresentationAttachment(presentation)) {
+			if (presentation.role === 'host') {
+				const offline = JSON.stringify({ id: crypto.randomUUID(), message: { kind: 'state', sessionId: presentation.sessionId, state: { presenting: false, index: 0, count: 0, title: '', laserActive: false } } })
+				for (const peer of this.ctx.getWebSockets(presentationSessionTag(presentation.sessionId))) {
+					const target = peer.deserializeAttachment()
+					if (!isPresentationAttachment(target) || target.role !== 'remote') continue
+					try { peer.send(offline) } catch { /* A closed peer will be pruned by the runtime. */ }
+				}
+			}
+			return
+		}
 		const attachment = getSocketAttachment(ws)
 		if (!attachment) return
 

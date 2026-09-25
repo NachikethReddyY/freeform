@@ -31,16 +31,10 @@ export async function handleAssetUpload(request: IRequest, env: Env) {
 	return { ok: true }
 }
 
-// when a user downloads an asset, we retrieve it from the bucket. we also cache the response for performance.
+// A board asset is private owner data. The Worker auth gate runs before this handler.
 export async function handleAssetDownload(request: IRequest, env: Env, ctx: ExecutionContext) {
 	const objectName = getAssetObjectName(request.params.uploadId)
-
-	// if we have a cached response for this request (automatically handling ranges etc.), return it
-	const cacheKey = new Request(request.url, { headers: request.headers })
-	const cachedResponse = await caches.default.match(cacheKey)
-	if (cachedResponse) {
-		return cachedResponse
-	}
+	void ctx
 
 	// if not, we try to fetch the asset from the bucket
 	const object = await env.TLDRAW_BUCKET.get(objectName, {
@@ -56,14 +50,8 @@ export async function handleAssetDownload(request: IRequest, env: Env, ctx: Exec
 	const headers = new Headers()
 	object.writeHttpMetadata(headers)
 
-	// assets are immutable, so we can cache them basically forever:
-	headers.set('cache-control', 'public, max-age=31536000, immutable')
+	headers.set('cache-control', 'private, no-store')
 	headers.set('etag', object.httpEtag)
-
-	// we set CORS headers so all clients can access assets. we do this here so our `cors` helper in
-	// worker.ts doesn't try to set extra cors headers on responses that have been read from the
-	// cache, which isn't allowed by cloudflare.
-	headers.set('access-control-allow-origin', '*')
 
 	// Prevent XSS from user-uploaded SVGs (or any file served with an executable content-type).
 	headers.set('content-security-policy', "default-src 'none'")
@@ -93,13 +81,6 @@ export async function handleAssetDownload(request: IRequest, env: Env, ctx: Exec
 	// make sure we get the correct body/status for the response
 	const body = 'body' in object && object.body ? object.body : null
 	const status = body ? (contentRange ? 206 : 200) : 304
-
-	// we only cache complete (200) responses
-	if (status === 200) {
-		const [cacheBody, responseBody] = body!.tee()
-		ctx.waitUntil(caches.default.put(cacheKey, new Response(cacheBody, { headers, status })))
-		return new Response(responseBody, { headers, status })
-	}
 
 	return new Response(body, { headers, status })
 }

@@ -4,7 +4,8 @@ import { defineConfig } from 'vite'
 
 // https://vitejs.dev/config/
 export default defineConfig(() => {
+	const isolatedState = process.env.FREEFORM_TEST_STATE_DIR
 	return {
-		plugins: [cloudflare(), react()],
+		plugins: [cloudflare(isolatedState ? { persistState: { path: isolatedState } } : undefined), react()],
 	}
 })

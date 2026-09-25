@@ -82,8 +82,10 @@ function memoryStorage() {
 	}
 }
 
-test('five distinct starters insert editable native shapes and live bindings near the viewport', () => {
-	assert.deepEqual(STARTERS.map(({ id }) => id), ['flowchart', 'mind-map', 'erd', 'sequence', 'architecture'])
+test('all starters insert editable native shapes and live bindings near the viewport', () => {
+	assert.deepEqual(STARTERS.map(({ id }) => id), [
+		'flowchart', 'mind-map', 'erd', 'sequence', 'architecture', 'api-stack', 'data-model', 'request-flow',
+	])
 	for (const starter of STARTERS) {
 		const editor = new TestEditor()
 		try {
@@ -107,6 +109,33 @@ test('five distinct starters insert editable native shapes and live bindings nea
 			for (const id of result.shapeIds) assert.equal(editor.getShape(id), undefined)
 		} finally { editor.dispose() }
 	}
+})
+
+test('developer starters show a useful connected scenario within compact bounds', () => {
+	for (const id of ['api-stack', 'data-model', 'request-flow'] as const) {
+		const diagram = STARTERS.find((starter) => starter.id === id)?.diagram
+		assert.ok(diagram, `${id} is available`)
+		assert.ok(diagram.nodes.length >= 4 && diagram.nodes.length <= 6, `${id} stays small`)
+		assert.ok(diagram.edges.length >= 3 && diagram.edges.length <= 6, `${id} has a useful flow`)
+		const nodeIds = new Set(diagram.nodes.map((node) => node.id))
+		assert.ok(diagram.edges.every((edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to)))
+		const width = Math.max(...diagram.nodes.map((node) => node.x + node.w)) - Math.min(...diagram.nodes.map((node) => node.x))
+		const height = Math.max(...diagram.nodes.map((node) => node.y + node.h)) - Math.min(...diagram.nodes.map((node) => node.y))
+		assert.ok(width <= 1000 && height <= 400, `${id} fits as a compact canvas block`)
+	}
+	const api = STARTERS.find(({ id }) => id === 'api-stack')!.diagram
+	assert.ok(api.nodes.some(({ label }) => /service/i.test(label)))
+	assert.ok(api.nodes.some(({ label }) => /database/i.test(label)))
+	assert.ok(api.edges.some(({ from, to }) => from === 'service' && to === 'database'))
+	const data = STARTERS.find(({ id }) => id === 'data-model')!.diagram
+	assert.ok(data.nodes.some(({ label }) => /project_id/.test(label)))
+	assert.ok(data.nodes.some(({ label }) => /task_id/.test(label)))
+	assert.ok(data.edges.every(({ label }) => label.includes('1 : many')))
+	const request = STARTERS.find(({ id }) => id === 'request-flow')!.diagram
+	assert.ok(request.nodes.some(({ label }) => /200/.test(label)))
+	assert.ok(request.nodes.some(({ label }) => /400/.test(label)))
+	assert.ok(request.edges.some(({ from, to }) => from === 'validate' && to === 'badRequest'))
+	assert.ok(request.edges.some(({ from, to }) => from === 'database' && to === 'success'))
 })
 
 test('flowchart branch arrows leave room for their Yes and No labels', () => {

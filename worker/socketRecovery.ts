@@ -3,6 +3,7 @@ import type { SessionStateSnapshot } from '@tldraw/sync-core'
 export interface SocketAttachment {
 	sessionId: string
 	snapshot: SessionStateSnapshot | null
+	ownerSessionHash?: string
 }
 
 interface RecoverableSocket {
@@ -11,18 +12,19 @@ interface RecoverableSocket {
 }
 
 export function getSocketAttachment(socket: RecoverableSocket): SocketAttachment | null {
-	const attachment = socket.deserializeAttachment() as SocketAttachment | null
-	return attachment?.sessionId ? attachment : null
+	const attachment = socket.deserializeAttachment() as (SocketAttachment & { kind?: string }) | null
+	return attachment?.sessionId && !attachment.kind ? attachment : null
 }
 
 export function saveConnectedSession(
 	socket: { serializeAttachment(attachment: SocketAttachment): void },
 	sessionId: string,
 	getSnapshot: () => SessionStateSnapshot | null,
+	ownerSessionHash?: string,
 ): boolean {
 	const snapshot = getSnapshot()
 	if (!snapshot) return false
-	socket.serializeAttachment({ sessionId, snapshot })
+	socket.serializeAttachment({ sessionId, snapshot, ...(ownerSessionHash ? { ownerSessionHash } : {}) })
 	return true
 }
 
@@ -50,9 +52,10 @@ export function recoverSocketSessions<TSocket extends RecoverableSocket>(
 	resume: (socket: TSocket, attachment: SocketAttachment & { snapshot: SessionStateSnapshot }) => void,
 ): void {
 	for (const socket of sockets) {
+		if ((socket.deserializeAttachment() as { kind?: unknown } | null)?.kind === 'presentation') continue
 		const attachment = getSocketAttachment(socket)
 		if (attachment?.snapshot) {
-			resume(socket, { sessionId: attachment.sessionId, snapshot: attachment.snapshot })
+			resume(socket, { sessionId: attachment.sessionId, snapshot: attachment.snapshot, ownerSessionHash: attachment.ownerSessionHash })
 		} else if (!newlyAccepted.has(socket)) {
 			socket.close(1012, 'Session state unavailable')
 		}

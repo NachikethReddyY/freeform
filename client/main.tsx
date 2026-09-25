@@ -4,10 +4,14 @@ import { createBrowserRouter, isRouteErrorResponse, Link, Navigate, RouterProvid
 import './index.css'
 import { Room } from './pages/Room'
 import { Root } from './pages/Root'
+import { PresentationRemoteView } from './features/presentation/presentationRemoteView'
+import { AuthGate, AuthProvider } from './features/auth/AuthGate'
 
 function KeyedRoom() {
 	const { roomId } = useParams()
-	return <Room key={roomId} />
+	const remoteSession = new URLSearchParams(window.location.search).get('presentationRemote')
+	if (roomId && remoteSession) return <PresentationRemoteView roomId={roomId} sessionId={remoteSession} />
+	return <AuthGate><Room key={roomId} /></AuthGate>
 }
 
 function AppRouteError() {
@@ -15,7 +19,7 @@ function AppRouteError() {
 	const message = isRouteErrorResponse(error) && error.status === 404
 		? 'That page could not be found.'
 		: 'This page could not load.'
-	return <main style={{ minHeight: '100vh', display: 'grid', placeContent: 'center', gap: 12, padding: 24, background: '#19191e', color: '#f2f2f5', fontFamily: 'Excalifont, sans-serif', textAlign: 'center' }}>
+	return <main style={{ minHeight: '100vh', display: 'grid', placeContent: 'center', gap: 12, padding: 24, background: '#19191e', color: '#f2f2f5', fontFamily: 'Geist Sans, sans-serif', textAlign: 'center' }}>
 		<h1 style={{ margin: 0 }}>FreeForm</h1>
 		<p style={{ margin: 0, color: '#adadb7' }}>{message}</p>
 		<div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
@@ -28,7 +32,7 @@ function AppRouteError() {
 const router = createBrowserRouter([
 	{
 		path: '/',
-		element: <Root />,
+		element: <AuthGate><Root /></AuthGate>,
 		errorElement: <AppRouteError />,
 	},
 	{
@@ -45,6 +49,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 	<React.StrictMode>
-		<RouterProvider router={router} />
+		<AuthProvider><RouterProvider router={router} /></AuthProvider>
 	</React.StrictMode>
 )

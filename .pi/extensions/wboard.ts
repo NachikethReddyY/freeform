@@ -3,11 +3,11 @@ import { Type } from 'typebox'
 import { CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { connectWboard } from '../../mcp/client'
 
-// Pi has no native MCP transport. This project extension exposes only our three local tools.
+// Pi has no native MCP transport. This project extension exposes only our local board tools.
 export default function wboard(pi: ExtensionAPI) {
 	let connection: ReturnType<typeof connectWboard> | undefined
 	const connect = () => connection ??= connectWboard().catch((error) => { connection = undefined; throw error })
-	const allowed = new Set(['read_board', 'propose_diagram', 'list_proposals'])
+	const allowed = new Set(['read_board', 'propose_diagram', 'propose_sql_erd', 'propose_openapi_map', 'list_proposals'])
 	const registered = new Set<string>()
 
 	pi.on('session_start', async (_event, context) => {

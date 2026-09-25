@@ -19,12 +19,13 @@ function socket(attachment: SocketAttachment | null) {
 test('recovers saved sessions and reconnects orphaned sockets without closing fresh handshakes', () => {
 	const snapshot = { serializedSchema: { schemaVersion: 2, sequences: {} } } as SessionStateSnapshot
 	const saved = socket({ sessionId: 'saved', snapshot })
+	const presentation = socket({ kind: 'presentation', sessionId: 'remote', role: 'remote' } as unknown as SocketAttachment)
 	const orphan = socket({ sessionId: 'orphan', snapshot: null })
 	const fresh = socket({ sessionId: 'fresh', snapshot: null })
 	const accepted = new WeakSet([fresh])
 	const resumed: string[] = []
 
-	recoverSocketSessions([saved, orphan, fresh], accepted, (_socket, attachment) => {
+	recoverSocketSessions([saved, orphan, fresh, presentation], accepted, (_socket, attachment) => {
 		resumed.push(attachment.sessionId)
 		assert.equal(attachment.snapshot, snapshot)
 	})
@@ -33,6 +34,7 @@ test('recovers saved sessions and reconnects orphaned sockets without closing fr
 	assert.equal(saved.closed, false)
 	assert.equal(orphan.closed, true, 'an orphan must trigger client replay instead of remaining silently editable')
 	assert.equal(fresh.closed, false, 'the first handshake has no snapshot yet')
+	assert.equal(presentation.closed, false, 'the room recovery path must leave presentation sockets alone')
 	assert.equal(getSocketAttachment(orphan)?.sessionId, 'orphan')
 })
 
@@ -49,6 +51,16 @@ test('saves a resumable attachment as soon as the handshake completes', () => {
 	const complete = saveConnectedSession(attachable, 'active', () => snapshot)
 	assert.equal(complete, true)
 	assert.deepEqual(attachable.attachment, { sessionId: 'active', snapshot })
+})
+
+test('persists the owner session hash across WebSocket hibernation', () => {
+	const snapshot = { serializedSchema: { schemaVersion: 2, sequences: {} } } as SessionStateSnapshot
+	const attachable = {
+		attachment: { sessionId: 'active', snapshot: null, ownerSessionHash: 'a'.repeat(64) } as SocketAttachment,
+		serializeAttachment(value: SocketAttachment) { this.attachment = value },
+	}
+	assert.equal(saveConnectedSession(attachable, 'active', () => snapshot, 'a'.repeat(64)), true)
+	assert.equal(attachable.attachment.ownerSessionHash, 'a'.repeat(64))
 })
 
 test('a late close from a replaced socket cannot end the current session', () => {

@@ -17,6 +17,7 @@ import { getCustomColor } from './colors'
 import { shapeBackgroundDisplayValues } from './backgroundDisplay'
 import { getSloppiness } from './sloppiness'
 import { isRectangleGeo, ROUNDED_RECTANGLE, roundedRectangleDefinition } from './roundedRectangle'
+import { getStrokeWidth } from './strokeWidth'
 
 function linePath(shape: TLLineShape) {
 	const points = Object.values(shape.props.points).sort((a, b) => a.index.localeCompare(b.index))
@@ -105,7 +106,8 @@ export class FreeformLineShapeUtil extends LineShapeUtil {
 		super(editor)
 		this.options = { ...this.options, getCustomDisplayValues: (_editor, shape) => {
 			const hex = getCustomColor(shape)
-			return hex ? { strokeColor: hex } : {}
+			const strokeWidth = getStrokeWidth(shape)
+			return { ...(hex ? { strokeColor: hex } : {}), ...(strokeWidth ? { strokeWidth } : {}) }
 		} }
 	}
 
@@ -128,8 +130,10 @@ export class FreeformGeoShapeUtil extends GeoShapeUtil {
 		super(editor)
 		this.options = { ...this.options, getCustomDisplayValues: (_editor, shape, theme, mode) => {
 			const hex = getCustomColor(shape)
+			const strokeWidth = getStrokeWidth(shape)
 			return {
 				...(hex ? { strokeColor: hex } : {}),
+				...(strokeWidth ? { strokeWidth, strokeRoundness: strokeWidth * 2, labelExtraPadding: strokeWidth } : {}),
 				...shapeBackgroundDisplayValues(shape, theme.colors[mode].solid, mode),
 			}
 		} }
