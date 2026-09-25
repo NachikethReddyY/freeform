@@ -15,19 +15,46 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 | Diagram insertion/retry | Fixed in focused proof | Actual tldraw fixture and local API; placement, bindings, early ack, retry, undo/page guards | No live model call; latest shell not covered by fixture |
 | Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; geometry Stroke/Background preset, custom, transparent, reload, SVG and PNG checks | Notes/frames/highlights/media and label colors remain outside the implementation |
 | New diagram controls | Named browser flows pass | Connected-node direct label typing/reload; Flowchart auto-layout and panel-clear fit; polished Sequence insertion/reload with 21 native shapes; personal-block save/reload/reinsert | 41 focused diagram tests pass; Safari hidden-tab automation cannot prove writes while animation frames are suspended (F15) |
-| Slides | First light slide observed in Helium; broader visual acceptance pending | Earlier reorder/undo/reload/fullscreen checks passed; the new stage mounts above tldraw UI, retries first-slide export and exposes loading/error UI. Helium directly showed the first content slide and right-aligned 1/1 controls on initial fullscreen entry; 25 focused presentation tests pass. | The fullscreen capture API returned the underlying editor window, so dark fit, transitions and laser trail still lack saved visual proof. No live audience sharing claim. |
+| Slides | Light/dark first slides captured; laser gesture acceptance pending | Earlier reorder/undo/reload/fullscreen checks passed; the stage mounts above tldraw UI, retries first-slide export and exposes loading/error UI. Isolated Helium captures show light and dark first slides with right-aligned controls; 26 focused presentation tests pass. | The laser trail has a focused one-pixel motion test, but live gesture/transition appearance still lacks saved visual proof. No live audience sharing claim. |
 | Local sign-in | Isolated owner flow passes | Registration, sign-in, sign-out, board/asset/socket authorization and a two-tab sign-out gate passed; the existing live workspace shows first-run setup | High for isolated local paths; live owner setup must be completed by its owner, and internet deployment was not tested |
 | Footer license notice | Fixed in visible desktop sample | Helium footer capture shows the full tldraw production notice separated from its help mark, and accessibility exposes its button | High for checked desktop width; narrower widths still need visual proof |
 | Board files | Browser matrix and new `.tldr` round trip pass | Earlier native `.json`/`.tldr` new-room imports, two pages, embedded PNG, reload, page/selection PNG/SVG, opacity and draw-font SVG; new `.tldr` download/import/reload retained three labeled shapes | New pass sampled one 3-shape board; larger files, external linked media and other fonts remain unverified |
 | Excalidraw import | Bounded fixture passes | Three elements ready, one image skipped, imported board reload; an earlier fixture also parsed a three-element/one-binding export | Current Files UI has no Excalidraw export control; unsupported elements/styles remain omissions |
 | Board deep links | Fixed in focused proof | Direct HTTP GET/HEAD board route now 200 HTML; disposable-board browser hard reload retained title/canvas/tools | Unknown API/MCP/assets/mutations stay 404 in the checked matrix |
-| AI chat and gateway | Mock-provider browser path passes | Load models chose `freeform-proof`; Ask answered, Draw previewed a validated diagram, Add inserted three native shapes retained after reload; Worker gateway tests 10/10 and TypeScript check pass | Actual Ollama/LM Studio and hosted-provider inference remain unverified; one provider fixture and board were sampled |
-| Developer diagram paths | Bounded browser and test paths pass | Four recognized Mermaid/SQL/OpenAPI/arrow-chain paste previews and ordinary text paste in Safari; paste tests 9/9 | Broad clipboard formats, large inputs and constrained viewports remain unverified |
+| AI chat and gateway | Mock-provider browser path passes; pending-draft fix has focused test | Load models chose `freeform-proof`; Ask answered, Draw previewed a validated diagram, Add inserted three native shapes retained after reload. A model regression now preserves text typed while a request is in flight; Worker tests distinguish timeout/rate-limit/interrupted responses. | Actual Ollama/LM Studio and hosted-provider inference remain unverified; one provider fixture and board were sampled |
+| Developer diagram paths | Bounded browser and test paths pass | Four recognized Mermaid/SQL/OpenAPI/arrow-chain paste previews, plus a reviewed native Markdown card inserted/reloaded in Safari; focused paste tests cover source preservation and native round trip | Broad clipboard formats, code/JSON/URL browser acceptance, large inputs and constrained viewports remain unverified |
 | Imported diagram arrows | Fixed in sampled Safari flow | Plain arrows now delegate to tldraw's native binding/label renderer. Safari inserted and arranged an API stack, moved its Service node with three bound arrows, then hard reloaded; endpoints and readable label gaps persisted. The focused Editor test covers a snapshot round trip too. A fresh Safari starter after spacing changes showed HTTP, Query and Job labels clear of strokes and arrowheads. | One starter and one moved node were sampled; broader labels, curves and dense boards remain unmeasured. |
 | Blue application accent | Sign-in and dashboard Safari views pass | The account screen shows a blue primary button/focus treatment; the signed-in dashboard has blue navigation selection and Start drawing, and the editor shell has blue selection. | The light presentation stage was visible in Helium; active laser blue still lacks a saved capture. Canvas palette intentionally includes violet drawing swatches. |
-| Storage consolidation | Audit only; central DB open | Catalog/personal blocks use browser localStorage, rooms use Durable Object SQLite, assets use R2 emulation, thumbnails use IndexedDB | No central database or migration was implemented; clearing browser storage can still remove catalog metadata |
+| Storage consolidation | Owner catalog implemented; unified DB open | Catalog/collections now sync to the authenticated owner's SQLite-backed Durable Object, with localStorage fallback. Isolated Worker restart and merge tests preserve board IDs/Trash; rooms, assets, thumbnails and personal blocks retain separate stores. | Multi-browser catalog UI and all-data migration remain unverified; an unsynced local change can still be lost with its browser profile. |
 
 ## Issues and follow-ups
+
+### B20 — AI reply could erase a newer unsent draft
+
+- [x] **Keep text typed while an AI request is pending.**
+- **Observed risk:** the success path cleared the prompt unconditionally, so a user who typed the next instruction while waiting would lose it.
+- **Fix and proof:** capture the submitted prompt, append that prompt to history, and clear the input only if it is still unchanged when the reply arrives. A focused model test covers unchanged, newer, and whitespace-preserving cases. Worker tests cover timeout, rate limit, and interrupted provider responses with distinct errors.
+- **Limit:** this draft race was verified by a focused test, not a live provider UI pass. Real provider inference remains unverified.
+
+### B19 — Inline Markdown emphasis overlapped in a pasted canvas card
+
+- [x] **Keep newly accepted Markdown cards readable on the canvas while preserving the pasted source.**
+- **Observed:** in a Safari disposable board, a list item with `**bold**` produced overlapping text in the native geometry label.
+- **Fix and proof:** the review preview still renders safe inline formatting, but the accepted tldraw shape writes headings and flat editable paragraphs/list markers without inline marks. The exact original Markdown stays in `meta.freeformPasteCard`. Safari inserted `# Diagram note` with `- **Client** calls API` and `- API reads database`; the flattened canvas card was readable in `.evidence/postplan-partial-proof/card-clean-safari-full.png` and persisted after hard reload. Focused native-card tests cover editability and `.tldr` source preservation.
+- **Limit:** existing cards created before this fix are not rewritten. The canvas intentionally flattens inline bold/italic/link marks; the preview and source retain them.
+
+### B21 — Empty collection rename could be lost during catalog sync
+
+- [x] **Preserve an intentional rename back to “My boards” even when the collection has no boards.**
+- **Cause:** the client treated every empty catalog with the default collection title as a fresh browser, discarding a newer rename before merging the owner's catalog.
+- **Fix and proof:** only a synthesized default collection with `updatedAt: 0` counts as fresh. A focused sync regression sends the renamed collection and retains its newer timestamp against an older server title; the board suite passed 23/23.
+
+### B18 — Palette Connect node did not focus its label for typing
+
+- [x] **Type into a newly connected node without clicking it again.**
+- **Observed:** choosing a Connect direction from Cmd/Ctrl+K left the palette closing while tldraw tool shortcuts consumed the next keystrokes.
+- **Fix and proof:** close the palette, wait for the dialog to unmount, return focus to the editor, then run the native Connect action. In Safari, Connect node below opened the new text entry area; typing `Database` immediately changed its label, and Escape kept it. Command eligibility and keyboard navigation have focused tests.
+- **Limit:** this check covered one direction and a disposable board; the separate canvas-edge picker remains unimplemented.
 
 ### B16 — Board remained visible in another tab after sign-out
 
@@ -49,7 +76,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - [x] **Keep imported connections attached to their native nodes and outside node labels.**
 - **Observed:** the latest imported-diagram screenshot shows a detached arrow and a connector stroke crossing text. The exact source input and root cause are still under investigation.
 - **Current fix:** plain native arrows now use tldraw's renderer for bound endpoints, clamped label placement and stroke clipping; FreeForm keeps its custom renderer for deliberately curved arrows. A focused actual-editor test covers two bindings, perimeter clearance, a moved node and snapshot reload.
-- **Browser proof:** Safari signed into a separate built Wrangler workspace after the Vite plugin's `fetch failed` sign-in overlay was bypassed. Inserting and arranging an API-stack starter showed connector strokes cut away from labels. Moving Service kept the incoming and two outgoing arrows attached, and a hard reload retained that layout. Two original branch labels wrapped awkwardly, so new starter copy was shortened from `read/write` and `enqueue` to `Query` and `Job`; that copy was source-reviewed and awaits a fresh screenshot.
+- **Browser proof:** Safari signed into a separate built Wrangler workspace after the Vite plugin's `fetch failed` sign-in overlay was bypassed. Inserting and arranging an API-stack starter showed connector strokes cut away from labels. Moving Service kept the incoming and two outgoing arrows attached, and a hard reload retained that layout. Two original branch labels wrapped awkwardly, so new starter copy was shortened from `read/write` and `enqueue` to `Query` and `Job`; a fresh Safari starter capture showed those shorter labels clear of strokes.
 - **Proof limit:** one starter and one moved node were sampled. A focused actual-Editor test additionally covers two bindings, perimeter clearance, a moved node and snapshot reload.
 - **Owner:** diagram implementation/root.
 
@@ -152,7 +179,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 - [x] Bulk Select/move, Copy link, and collection rename cancel with Escape passed on synthetic boards in Zen at desktop and 720px; two moved boards remain recoverable in Trash.
 - [x] Two populated synthetic room URLs retained separate title, page and canvas content across Zen A→B→A navigation and hard reloads on both rooms. A read-only API/router check alternated six URL/API reads; room A stayed at 3 pages/45 shapes, room B at 6 pages/69 shapes, with no shared shape IDs. Local app-only screenshots: `.evidence/ui-review/two-room-board-a-flow-app.jpg`, `.evidence/ui-review/two-room-board-b-sequence-app.jpg`.
-- [ ] General two-way draw/move/upload collaboration needs proof beyond the verified two-client custom-color path.
+- [x] Isolated two-client SDK/WebSocket proof covered A-to-B create, B-to-A move, PNG upload/download through local R2, delete, authorization denial and persistence after restart. Browser cursor/UI collaboration and cross-device behavior remain unverified.
 - [ ] All advertised shortcuts need focused checks. A sampled Board Files matrix now covers `.tldr` picker acceptance, two pages, an embedded PNG, page/selection PNG/SVG, opacity and draw-font SVG; external linked media and other fonts remain open.
 - [x] Blank-text click-away cleanup passed in the integrated editor: clicking away from a newly created empty Text shape, and from a Text shape containing three spaces, left only the pre-existing text selected by Select All (1 of 1). Native tldraw cleanup handles both editing exits.
 - [ ] An edit followed by immediate dashboard navigation may leave the last thumbnail until the board is reopened; the capture is debounced. Confirm desired behavior before calling this a data-loss defect.
@@ -336,7 +363,7 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 
 ## Known limitations, not fixed bugs
 
-- **Browser-local catalog:** board names, collections, recency, and Trash live in the browser origin. Room content lives separately in local server storage; clearing browser storage can remove catalog metadata without deleting the room.
+- **Catalog cache and separate stores:** board names, collections, recency and Trash sync to the authenticated local owner's SQLite-backed catalog, with a browser cache for temporary offline use. Room content, uploaded media, previews and personal blocks still use separate stores. A browser-only change that has not synced can be lost with that browser profile.
 - **Local thumbnails:** previews live in IndexedDB and are not shared across browsers/devices. Never-opened/blank boards use a fallback. Capture skips unsupported remote assets/fonts and retains the last usable image.
 - **Custom colors:** supported native geo/arrow/text/draw/line shapes use synced metadata; notes/frames/highlights/media and independent geo/arrow label colors are not covered. Session drawing defaults reset on editor reload.
 - **Mermaid:** bounded flowcharts only; no sequence grammar, subgraphs, styles, links, HTML/Markdown labels, or arbitrary renderer imports. Rounded syntax normalizes to a native rectangle.

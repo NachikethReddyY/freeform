@@ -1,9 +1,27 @@
 # Freeform tasks
 
+## Postplan partial-feature completion — 2026-09-25
+
+- [ ] AI chat and Draw: exercise a real local or configured provider, improve cancellation/errors, and verify reviewed native insertion. Mock-provider Ask/Draw/Add has browser proof; a focused regression now preserves a newer unsent draft and gateway tests distinguish provider failure types. Actual inference is still unverified.
+- [ ] Editor and style: audit unverified theme/mobile/style combinations and fix concrete visible failures.
+- [ ] Geist app chrome: audit menus, panels, and narrow layouts; correct remaining handwritten chrome.
+- [ ] Slides and presentation: finish light/dark fit, transitions, laser trail, remote, and browser-visible proof. Light/dark first-slide captures and 26 focused tests now pass; live trail gesture and transition visuals remain unverified.
+- [ ] Smart connectors: improve node-port creation/routing as supported by native bindings; verify label and movement behavior. Four bound directions work in the palette and one Safari direction accepts immediate typing; port dragging and obstacle routing are still absent.
+- [x] Diagram mode and auto-layout: add useful directions and test undo, bindings, frames, and viewport fit. Horizontal/vertical/tree operate on eligible native selections; focused tests cover bindings, undo, frame backdrop, fit, cycles and shared-descendant rejection; Safari exercised tree Arrange.
+- [x] Custom technical nodes: make practical editable developer nodes/templates while retaining native records. Six editable native geo presets (API/database/service/queue/function/cloud) appear in Diagrams and Cmd/Ctrl+K, with focused tests. Typed fields and live integrations remain outside this slice.
+- [x] Mermaid to/from canvas: provide bounded editable import and a separate canvas-to-Mermaid text export without changing native `.tldr` board export. Selected native nodes/bound arrows export parseable Mermaid with omission counts in focused tests; `.tldr` remains the full board file.
+- [x] Universal paste: add safe JSON, Markdown, code, and URL handling while preserving native file/image/text paste. Bounded plain-text proposals require Add/Cancel, focused tests cover each kind and native preservation, and Safari inserted/reloaded a Markdown card. Code/JSON/URL browser passes remain open.
+- [x] Command palette and keyboard-first diagrams: expose new diagram operations and check keyboard selection/creation. Create node/technical nodes, four Connect directions, and three Arrange modes have focused tests; Safari verified immediate Connect label typing and tree Arrange.
+- [ ] URL cards and live architecture: a safe HTTP URL can become a reviewed native link card, but tailored GitHub/docs/YouTube presentation and localhost service/route status remain absent.
+- [ ] AI chat with model selection: verify real provider/model path and distinguish local subscription limits from implemented behavior.
+- [x] Local-first storage: implement the feasible owner catalog migration while preserving existing board IDs and Trash. The authenticated SQLite-backed catalog merges older browser indexes, hydrates new browser caches, and survived isolated Worker restart tests. Room data, assets, thumbnails and personal blocks remain split; a single all-data database is still open below.
+- [x] Multiplayer: prove two-client drawing, moving, and upload persistence on an isolated local room. Two SDK/WebSocket clients exchanged create/move/delete and a PNG asset; authorization and restart persistence checks passed. Browser cursors and cross-device behavior remain unverified.
+- [x] Reconcile all partial rows against source and direct evidence, update `bug.md`, feature map and screenshot HTML, run relevant checks/build, commit/push focused slices to `main`, and update/verify Postplan. Postplan v15 is live as version 12 with an exact raw-HTML match; focused commits are prepared for the authorized main push.
+
 ## Partial-feature finish and blue interface — 2026-09-25
 
 - [x] Fix imported arrow labels and verify connector attachment/readability in a visible browser after reload. Safari API stack → Arrange → move Service → hard reload kept three bindings attached and labels clear; a fresh Safari API-stack capture showed the shorter Query/Job captions and wider HTTP gap clear of strokes and arrowheads.
-- [ ] Finish the reported presentation first-slide, theme, laser, remote and control-layout issues; verify in a visible browser. Stage stacking, first-slide export retry, status/retry UI and blue accents are implemented. Helium directly displayed the light first slide and right-aligned controls on initial fullscreen entry. Its capture API attached to the underlying editor window, so dark/laser appearance still needs trustworthy saved visual proof.
+- [ ] Finish the reported presentation first-slide, theme, laser, remote and control-layout issues; verify in a visible browser. Light and dark first slides now have isolated Helium captures, and the scoped remote passed navigation/toggle checks; live laser gesture and transition appearance still need trustworthy visual proof.
 - [x] Replace purple application chrome with blue in dashboard, authentication and presentation surfaces while preserving neutral canvas content. Safari visually checked account and dashboard blue; editor selection and presentation CSS use blue; color swatches remain drawing choices.
 - [x] Audit the ideas sent in chat against implemented code and browser behavior; update the feature map and HTML with explicit implemented, partial and absent statuses. The 22-row chat inventory distinguishes bounded native flows from absent specialist features.
 - [x] Review the tldraw license notice request against license terms; keep the app compliant and document the legitimate removal path. The SDK license forbids removing notices or tampering with enforcement; a valid license key is the supported route.
@@ -18,7 +36,7 @@
 
 - [ ] Present frame contents as isolated, borderless slides with expanded white space; animate navigation based on frame positions and add compact, hideable icon controls and a laser pointer.
 - [ ] Fix first-slide blank state; add a dark slide theme, right-aligned controls, a small fading laser pointer, and a scoped same-origin presentation remote. Verify each in Safari.
-- [ ] Make the presentation dark theme seamless across the expanded slide, without darker frame-sized patches or exposed corners.
+- [x] Make the presentation dark theme seamless across the expanded slide, without darker frame-sized patches or exposed corners. An isolated Helium dark first-slide capture shows content and the expanded dark stage without a visible frame-sized patch.
 - [x] Make the presenter remote connect across Safari and Helium windows. An isolated two-frame workspace showed Connected in Safari; Previous/Next and laser toggle changed the Helium presenter and remote, and ending presentation returned the remote to Waiting.
 - [ ] Make a short laser trail visible during pointer movement and remote gestures; replace the harsh red active state and clarify the presentation and remote icons.
 - [x] Add first-run local owner setup, password sign-in, sign-out, and session protection for board APIs. Isolated registration/login/dashboard/asset/socket checks passed; a Helium two-tab sign-out immediately gated the other open board. The live workspace remains unregistered so its owner chooses the password and claims existing boards.
@@ -28,7 +46,7 @@
 - [ ] Add an icon-led slide organizer flow for creating, ordering, renaming, and starting framed slides while preserving board data and undo.
 - [ ] Refine the dashboard layout from the supplied homepage reference: quick search/collections in the rail, clear start action and usable recent-board previews.
 - [ ] Use Geist for application menus, panels, and dashboard chrome while retaining handwritten canvas text.
-- [ ] Remove Excalidraw export from Files while preserving native `.tldr` round trips, image export, and Excalidraw import; align current-feature docs.
+- [x] Remove Excalidraw export from Files while preserving native `.tldr` round trips, image export, and Excalidraw import. A native three-shape `.tldr` browser round trip passed; Files now documents native board export as primary.
 - [ ] Reject SQL constraints that the ERD importer cannot represent; propagate AI Stop cancellation to the upstream provider.
 - [ ] Browser-check presentation, dashboard, Files and connector labels in one Safari work tab at desktop and narrow width; do not use Zen. Update screenshots/report, run focused checks and build, then commit, push and publish the authorized HTML report.
 
@@ -41,9 +59,9 @@
 - [x] Add bounded SQL `CREATE TABLE` and OpenAPI 3.x JSON imports that preview editable native shapes and report unsupported input. Four recognized diagram paste previews passed a Safari browser check.
 - [x] Add recognized Mermaid, SQL, OpenAPI and arrow-chain paste previews; ordinary text and native file/image paste retain their native route. Focused paste checks passed 9/9.
 - [x] Verify the corrected **Download FreeForm board** `.tldr` action with a fresh browser export/import round trip. The menu had no Mermaid action; `Untitled board.tldr` downloaded with native MIME and three shape records, imported into a new room, and retained the three labeled shapes after hard navigation/reload. The earlier Mermaid download prototype was superseded and removed.
-- [ ] Fix imported diagram arrows that appear detached from their nodes or cross node labels; verify the corrected SQL/OpenAPI or pasted diagram in the browser after reload. See B15 in `bug.md`.
-- [x] Audit storage locations: catalog and personal blocks in browser localStorage, rooms in Durable Object SQLite, assets in R2 emulation, thumbnails in browser IndexedDB. Document the split in README and feature map.
-- [ ] Design and implement a central local database and migration, if that remains the product decision. It has not been achieved; existing boards must remain accessible.
+- [x] Fix imported diagram arrows that appear detached from their nodes or cross node labels; verify a corrected API-stack starter in Safari after node movement and reload. A fresh capture shows shorter Query/Job labels clear of strokes; broader SQL/OpenAPI cases remain unverified. See B15 in `bug.md`.
+- [x] Audit storage locations and document the current split: catalog/collections now sync to authenticated owner SQLite with a browser cache; personal blocks remain browser-local, rooms use separate Durable Object SQLite, assets R2 emulation, and thumbnails IndexedDB. Documented in README and feature map.
+- [ ] Design and implement a single local database for room documents, assets, previews and personal blocks if that remains the product decision. The board/collection catalog now syncs to the owner Durable Object with a browser fallback, but the other stores remain split and the full migration has not been achieved.
 - [ ] Verify each new user flow in the browser at desktop and a constrained viewport, capture evaluated screenshots, run focused tests and build, update `bug.md` and feature documentation.
 - [x] Commit and push code checkpoint `7aad872` and report checkpoint `194e862`; update the authorized seven-image HTML report. A further 65 editor/import/paste/AI tests passed with Node's test-runner force-exit flag, bringing the focused check total to 174. Postplan v9 records that final result; remaining visual checks stay open above.
 
