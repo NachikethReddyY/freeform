@@ -8,6 +8,7 @@ import {
 	DefaultFillStyle,
 	DefaultMainMenu,
 	DefaultMainMenuContent,
+	DefaultMinimap,
 	DefaultPageMenu,
 	DefaultStylePanel,
 	DefaultToolbar,
@@ -144,6 +145,7 @@ function BoardZoomPanel() {
 	const actions = useActions()
 	const zoom = useValue('freeform zoom', () => editor.getZoomLevel(), [editor])
 	const presets = useRef<HTMLDetailsElement>(null)
+	const [minimapOpen, setMinimapOpen] = useState(false)
 	const setZoom = (percent: number) => {
 		presets.current?.removeAttribute('open')
 		if (percent === 100) {
@@ -169,6 +171,13 @@ function BoardZoomPanel() {
 				</div>
 			</details>
 			<button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => actions['zoom-in'].onSelect('navigation-zone')}>+</button>
+			<button type="button" aria-label="Minimap" title="Minimap" aria-pressed={minimapOpen} onClick={() => { presets.current?.removeAttribute('open'); setMinimapOpen((open) => !open) }}>
+				<svg className="freeform-minimap-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><rect x="5.5" y="6.5" width="7" height="5" rx=".5" /><path d="M15 15h3m-3 2h3" /></svg>
+			</button>
+			{minimapOpen && <div className="freeform-minimap-panel" role="group" aria-label="Minimap navigation" onPointerDown={(event) => event.stopPropagation()}>
+				<button type="button" className="freeform-minimap-close" aria-label="Close minimap" title="Close minimap" onClick={() => setMinimapOpen(false)}>×</button>
+				<DefaultMinimap />
+			</div>}
 	</div>
 }
 

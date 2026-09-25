@@ -291,6 +291,11 @@ body:has(.tlui-focus-button) .freeform-ai-panel { visibility: hidden; pointer-ev
 .freeform-zoom { position: relative; display: flex; align-items: center; gap: 1px; height: 34px; padding: 2px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; color: var(--tl-color-text); box-shadow: var(--tl-shadow-2); }
 .freeform-zoom button, .freeform-zoom summary { min-width: 28px; padding: 4px 6px; color: inherit; background: transparent; border: 0; border-radius: 4px; font: 600 13px 'Geist Sans', sans-serif; text-align: center; cursor: pointer; }
 .freeform-zoom button:hover, .freeform-zoom summary:hover { background: var(--tl-color-muted-1); }
+.freeform-zoom button[aria-pressed='true'] { background: var(--tl-color-muted-1); color: var(--tl-color-selected); }
+.freeform-minimap-icon { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.freeform-minimap-panel { position: absolute; left: 0; bottom: 39px; width: 224px; padding: 18px 4px 4px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 8px; box-shadow: var(--tl-shadow-3); pointer-events: auto; }
+.freeform-minimap-panel .tlui-minimap { height: 110px; min-height: 110px; }
+.freeform-minimap-panel .freeform-minimap-close { position: absolute; top: 1px; right: 2px; display: grid; place-items: center; width: 25px; height: 25px; font: 18px/1 'Geist Sans', sans-serif; }
 .freeform-zoom-presets > summary { min-width: 58px; list-style: none; }
 .freeform-zoom-presets > summary::-webkit-details-marker { display: none; }
 .freeform-zoom-options { position: absolute; bottom: 39px; left: 20px; display: grid; width: 126px; padding: 5px; background: var(--tl-color-panel); border: 1px solid var(--tl-color-divider); border-radius: 7px; box-shadow: var(--tl-shadow-3); }
