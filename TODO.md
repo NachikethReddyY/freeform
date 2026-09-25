@@ -1,5 +1,14 @@
 # Freeform tasks
 
+## Partial-feature finish and blue interface — 2026-09-25
+
+- [x] Fix imported arrow labels and verify connector attachment/readability in a visible browser after reload. Safari API stack → Arrange → move Service → hard reload kept three bindings attached and labels clear; a fresh Safari API-stack capture showed the shorter Query/Job captions and wider HTTP gap clear of strokes and arrowheads.
+- [ ] Finish the reported presentation first-slide, theme, laser, remote and control-layout issues; verify in a visible browser. Stage stacking, first-slide export retry, status/retry UI and blue accents are implemented; Safari fullscreen accessibility showed content and 1/1 controls, while its screenshot captured the underlying window. Dark/laser appearance needs trustworthy visual proof.
+- [x] Replace purple application chrome with blue in dashboard, authentication and presentation surfaces while preserving neutral canvas content. Safari visually checked account and dashboard blue; editor selection and presentation CSS use blue; color swatches remain drawing choices.
+- [x] Audit the ideas sent in chat against implemented code and browser behavior; update the feature map and HTML with explicit implemented, partial and absent statuses. The 22-row chat inventory distinguishes bounded native flows from absent specialist features.
+- [x] Review the tldraw license notice request against license terms; keep the app compliant and document the legitimate removal path. The SDK license forbids removing notices or tampering with enforcement; a valid license key is the supported route.
+- [x] Run relevant focused checks, production build and browser visual review; capture app screenshots, update issue log/report, commit and push each completed slice to main, then publish and verify the authorized Postplan HTML. The starter/binding/palette checks passed 15/15, presentation checks 25/25, TypeScript and production build passed, and Safari checked the updated API-stack labels. The 12-image report reached Postplan v10 with public HTTP 200 and a byte-identical raw HTML hash. Fullscreen presentation appearance remains open above.
+
 ## Geist Sans Docker dependency repair — 2026-09-25
 
 - [x] Reinstall locked dependencies into the existing Compose `node_modules` volume without touching board data. Both Geist Sans CSS files are present in the repaired volume.
