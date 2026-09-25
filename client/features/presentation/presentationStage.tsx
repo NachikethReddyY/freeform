@@ -26,6 +26,25 @@ export async function exportPresentationSlide(editor: Editor, frame: TLFrameShap
 	return { svg: result?.svg ?? '', bounds }
 }
 
+/** Font and asset export can fail while the first fullscreen layout settles. Retry a bounded number of times. */
+export async function exportPresentationSlideWithRetry(
+	editor: Editor,
+	frame: TLFrameShape,
+	darkMode = false,
+	wait: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms))
+) {
+	for (const delay of [160, 420]) {
+		try {
+			const slide = await exportPresentationSlide(editor, frame, darkMode)
+			if (slide?.svg) return slide
+		} catch {
+			// A final failed attempt is surfaced in the slide so it can be retried manually.
+		}
+		await wait(delay)
+	}
+	return exportPresentationSlide(editor, frame, darkMode)
+}
+
 function Icon({ name }: { name: 'previous' | 'next' | 'laser' | 'hide' | 'show' | 'close' | 'dark' | 'light' | 'remote' }) {
 	const path = {
 		previous: <path d="m14.5 5-7 7 7 7" />,
@@ -72,7 +91,8 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 	const pointId = useRef(0)
 	const lastLaserPoint = useRef<{ x: number; y: number; at: number } | null>(null)
 	const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight })
-	const [, redraw] = useState(0)
+	const [revision, redraw] = useState(0)
+	const [failedExports, setFailedExports] = useState<Set<string>>(() => new Set())
 	const [controlsHidden, setControlsHidden] = useState(false)
 	const [remoteOpen, setRemoteOpen] = useState(false)
 	const [remoteCopied, setRemoteCopied] = useState(false)
@@ -147,15 +167,28 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 			const key = `${frame.id}:${darkMode ? 'dark' : 'light'}`
 			if (objectUrls.current.has(key) || pending.current.has(key)) continue
 			pending.current.add(key)
-			void exportPresentationSlide(editor, frame, darkMode).then((slide) => {
+			void exportPresentationSlideWithRetry(editor, frame, darkMode).then((slide) => {
 				pending.current.delete(key)
-				if (!slide || !mounted.current || !slide.svg) return
+				if (!mounted.current) return
+				if (!slide?.svg) {
+					setFailedExports((current) => new Set(current).add(key))
+					return
+				}
 				const url = URL.createObjectURL(new Blob([slide.svg], { type: 'image/svg+xml' }))
 				objectUrls.current.set(key, url)
+				setFailedExports((current) => {
+					if (!current.has(key)) return current
+					const next = new Set(current)
+					next.delete(key)
+					return next
+				})
 				redraw((value) => value + 1)
-			}).catch(() => { pending.current.delete(key) })
+			}).catch(() => {
+				pending.current.delete(key)
+				if (mounted.current) setFailedExports((current) => new Set(current).add(key))
+			})
 		}
-	}, [editor, frames, index, previousFrameId, darkMode])
+	}, [editor, frames, index, previousFrameId, darkMode, revision])
 
 	useEffect(() => {
 		mounted.current = true
@@ -195,13 +228,21 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 			{visible.map((frame) => {
 				const bounds = editor.getShapePageBounds(frame.id)
 				if (!bounds) return null
+				const key = `${frame.id}:${darkMode ? 'dark' : 'light'}`
+				const url = objectUrls.current.get(key)
+				const fallback = darkMode ? objectUrls.current.get(`${frame.id}:light`) : undefined
 				return <div key={frame.id} className="freeform-presentation-stage__slide" data-frame-id={frame.id}
 					style={{ left: bounds.x, top: bounds.y, width: bounds.w, height: bounds.h }}>
-					{objectUrls.current.get(`${frame.id}:${darkMode ? 'dark' : 'light'}`)
-						? <img src={objectUrls.current.get(`${frame.id}:${darkMode ? 'dark' : 'light'}`)} alt="" draggable={false} />
-						: darkMode && objectUrls.current.get(`${frame.id}:light`)
-							? <img src={objectUrls.current.get(`${frame.id}:light`)} className="freeform-presentation-stage__fallback" alt="" draggable={false} />
-							: null}
+					{url ? <img src={url} alt="" draggable={false} />
+						: fallback ? <img src={fallback} className="freeform-presentation-stage__fallback" alt="" draggable={false} />
+						: !failedExports.has(key) ? <div className="freeform-presentation-stage__loading" role="status">Preparing slide…</div> : null}
+					{failedExports.has(key) && <div className="freeform-presentation-stage__error" role="alert">
+						<span>This slide could not be rendered.</span>
+						<button type="button" onClick={() => {
+							setFailedExports((current) => { const next = new Set(current); next.delete(key); return next })
+							redraw((value) => value + 1)
+						}}>Retry</button>
+				</div>}
 				</div>
 			})}
 		</div>

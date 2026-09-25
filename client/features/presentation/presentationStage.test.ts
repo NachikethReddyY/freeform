@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { Editor, TLFrameShape, TLShapeId } from 'tldraw'
-import { getPresentationCamera, exportPresentationSlide, getLaserSegment } from './presentationStage'
+import { getPresentationCamera, exportPresentationSlide, exportPresentationSlideWithRetry, getLaserSegment } from './presentationStage'
 
 test('a small frame expands into a centered slide without exposing nearby canvas', () => {
 	const camera = getPresentationCamera({ x: 200, y: 500, w: 320, h: 180 }, 1280, 720)
@@ -29,6 +29,24 @@ test('slide export uses tldraw single-frame path and clips to the frame bounds',
 	assert.equal(slide?.svg.includes('<svg'), true)
 	await exportPresentationSlide(editor, frame, true)
 	assert.deepEqual(called?.options, { bounds, background: false, darkMode: true, padding: 0 }, 'dark slides export inverted content over the seamless stage surface')
+})
+
+test('a transient first-frame export failure retries before leaving the presentation blank', async () => {
+	const frame = { id: 'shape:first', type: 'frame' } as TLFrameShape
+	let attempts = 0
+	const editor = {
+		getShapePageBounds: () => ({ x: 0, y: 0, w: 640, h: 360 }),
+		getSvgString: async () => {
+			attempts += 1
+			if (attempts === 1) throw new Error('font still loading')
+			return { svg: '<svg xmlns="http://www.w3.org/2000/svg"><text>First slide</text></svg>' }
+		},
+	} as unknown as Editor
+	const delays: number[] = []
+	const slide = await exportPresentationSlideWithRetry(editor, frame, false, async (ms) => { delays.push(ms) })
+	assert.equal(attempts, 2)
+	assert.deepEqual(delays, [160])
+	assert.match(slide?.svg ?? '', /First slide/)
 })
 
 test('laser movement creates a visible segment only for continuous motion', () => {

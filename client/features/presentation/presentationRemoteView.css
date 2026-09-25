@@ -44,14 +44,14 @@
 	cursor: pointer;
 }
 .freeform-presentation-remote button:hover:not(:disabled) { background: #3d414e; }
-.freeform-presentation-remote button:focus-visible { outline: 2px solid #7a9cfa; outline-offset: 2px; }
+.freeform-presentation-remote button:focus-visible { outline: 2px solid #4c99f4; outline-offset: 2px; }
 .freeform-presentation-remote button:disabled { cursor: default; opacity: .42; }
 .freeform-presentation-remote__navigation { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .freeform-presentation-remote__navigation button { min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 9px; border-radius: 10px; font: inherit; font-size: 14px; }
 .freeform-presentation-remote__touchpad { position: relative; width: 100%; height: clamp(170px, 35vh, 300px); display: grid; place-content: center; justify-items: center; gap: 10px; border-radius: 12px; touch-action: none; user-select: none; }
-.freeform-presentation-remote__touchpad > svg { width: 32px; height: 32px; color: #c4cbff; }
+.freeform-presentation-remote__touchpad > svg { width: 32px; height: 32px; color: #a8d4ff; }
 .freeform-presentation-remote__touchpad-label { color: #afb3be; font: inherit; font-size: 13px; }
-.freeform-presentation-remote__point { position: absolute; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 0 8px #a5b6ff26, 0 0 22px #a5b6ffb0; }
+.freeform-presentation-remote__point { position: absolute; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); background: #fff; box-shadow: 0 0 0 8px #4c99f426, 0 0 22px #4c99f4b0; }
 .freeform-presentation-remote__footer { justify-content: flex-end; gap: 10px; }
 .freeform-presentation-remote__footer button { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 10px; }
-.freeform-presentation-remote__footer button[aria-pressed='true'] { color: #fff; border-color: #7779ab; background: #4b4b69; }
+.freeform-presentation-remote__footer button[aria-pressed='true'] { color: #fff; border-color: #2675bd; background: #1d4b75; }

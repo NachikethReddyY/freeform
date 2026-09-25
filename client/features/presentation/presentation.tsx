@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useReducer } from 'react'
+import { createPortal } from 'react-dom'
 import type { Editor, TLFrameShape, TLShapeId } from 'tldraw'
 import { SlideOrganizer } from './slideOrganizer'
 import { PresentationStage } from './presentationStage'
@@ -358,7 +359,8 @@ export function PresentationControls({ editor }: PresentationControlsProps) {
 		)
 	}
 
-	return <PresentationStage
+	// The canvas overlay is below tldraw's UI stacking layer; fullscreen stage must be its sibling.
+	return createPortal(<PresentationStage
 		editor={editor}
 		frames={getPresentationFrames(editor)}
 		index={presentation.currentIndex}
@@ -366,5 +368,5 @@ export function PresentationControls({ editor }: PresentationControlsProps) {
 		onPrevious={() => presentation.previous()}
 		onNext={() => presentation.next()}
 		onExit={() => presentation.exit()}
-	/>
+	/>, editor.getContainer())
 }
