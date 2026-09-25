@@ -106,7 +106,7 @@ body {
 .RoomWrapper-commands kbd { font: 11px/1.2 ui-monospace, monospace; color: #c3c3cc; margin-left: 6px; }
 .RoomWrapper-header button:focus-visible,
 .freeform-panel-tabs button:focus-visible,
-.freeform-shortcuts-button:focus-visible { outline: 2px solid #a6a0f4; outline-offset: 2px; }
+.freeform-shortcuts-button:focus-visible { outline: 2px solid #86b8ff; outline-offset: 2px; }
 
 .RoomWrapper-copy {
 	position: relative;
@@ -173,7 +173,7 @@ body {
 .freeform-left-shell[data-open='false'] .freeform-left-panel { bottom: auto; }
 .freeform-panel-tabs { display: flex; align-items: center; gap: 2px; padding: 10px; border-bottom: 1px solid #42424a; }
 .freeform-panel-tabs button { flex: 1; border: 0; border-radius: 5px; padding: 7px 4px; color: #bebec8; background: transparent; font: 13px/1.2 inherit; cursor: pointer; }
-.freeform-panel-tabs button.is-active { color: #fff; background: #454257; }
+.freeform-panel-tabs button.is-active { color: #fff; background: #315580; }
 .freeform-panel-tabs .freeform-panel-toggle { flex: none; width: 28px; font-size: 20px; line-height: 1; }
 .freeform-panel-body { flex: 1; min-height: 0; overflow: auto; padding: 12px; overscroll-behavior: contain; }
 .freeform-panel-body .tlui-style-panel,
@@ -259,7 +259,7 @@ body {
 .freeform-board-popover > strong { display: block; margin: 2px 5px 8px; font-size: 13px; }
 .freeform-board-items { display: grid; gap: 3px; max-height: 240px; overflow: auto; }
 .freeform-board-items button { display: flex; justify-content: space-between; text-align: left; gap: 8px; width: 100%; padding: 8px; color: #eeeef2; background: transparent; border: 0; border-radius: 5px; cursor: pointer; }
-.freeform-board-items button[aria-current='page'] { background: #414052; }
+.freeform-board-items button[aria-current='page'] { background: #2a466a; }
 .freeform-board-items button span:first-child { overflow: hidden; text-overflow: ellipsis; }
 .freeform-board-items small { display: block; color: #a9a9b4; font: 10px ui-monospace, monospace; }
 .freeform-board-operations { display: flex; gap: 5px; margin-top: 9px; padding-top: 9px; border-top: 1px solid #494951; }
