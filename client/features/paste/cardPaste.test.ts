@@ -47,6 +47,25 @@ test('one safe HTTP URL proposes a link card without fetching it', () => {
 	assert.equal(cardFromClipboard(clipboard('See https://example.com for details')), null)
 })
 
+test('a matching URI-list clipboard format keeps the URL review route', () => {
+	const url = 'https://example.com/docs/guide'
+	assert.deepEqual(cardFromClipboard({
+		...clipboard(url, ['text/plain', 'text/uri-list']),
+		getData: (format: string) => format === 'text/uri-list' || format === 'text/plain' ? url : '',
+	}), {
+		kind: 'url', title: 'example.com', url, source: url, preview: '/docs/guide',
+	})
+	assert.equal(cardFromClipboard({
+		...clipboard(url, ['text/plain', 'text/uri-list']),
+		getData: (format: string) => format === 'text/plain' ? url : 'https://other.example.com/',
+	}), null)
+	const json = '{"name":"FreeForm"}'
+	assert.equal(cardFromClipboard({
+		...clipboard(json, ['text/plain', 'text/uri-list']),
+		getData: () => json,
+	}), null)
+})
+
 test('native media, board records, and rich clipboard content remain native', () => {
 	const markdown = '# Notes\n- Item'
 	assert.equal(cardFromClipboard(clipboard(markdown, ['text/plain', 'Files'], '', 1)), null)

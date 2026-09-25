@@ -56,17 +56,21 @@ function codeCard(source: string, body: string, language?: string): IncomingPast
  */
 export function cardFromClipboard(data: ClipboardTextData | null): IncomingPasteCard | null {
 	if (!data || data.files.length || Array.from(data.items).some((item) => item.kind === 'file')) return null
-	if (data.types.length !== 1 || data.types[0] !== 'text/plain') return null
 	const source = data.getData('text/plain')
+	const plainTextOnly = data.types.length === 1 && data.types[0] === 'text/plain'
+	const matchingUriList = data.types.length === 2 && data.types.includes('text/plain')
+		&& data.types.includes('text/uri-list') && data.getData('text/uri-list').trim() === source.trim()
+	if (!plainTextOnly && !matchingUriList) return null
 	if (!source.trim() || source.length > MAX_CARD_SOURCE || source.split(/\r?\n/).length > MAX_CARD_LINES) return null
 	if (diagramFromClipboard(data)) return null
+	const classification = classifyPaste(source, { types: data.types })
+	if (matchingUriList && classification.kind !== 'url') return null
 
 	const trimmed = source.trim()
 	const fenced = fencedCode(trimmed)
 	const json = jsonCard(source, (fenced?.language === 'json' ? fenced.body : trimmed).trim())
 	if (json) return json
 	if (fenced) return codeCard(source, fenced.body, fenced.language)
-	const classification = classifyPaste(source, { types: data.types })
 	switch (classification.kind) {
 		case 'markdown': {
 			const heading = /^#{1,6}\s+(.+)$/m.exec(trimmed)
