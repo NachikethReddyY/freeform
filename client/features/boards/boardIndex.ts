@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { mergeBoardCatalogs, parseBoardCatalog, type BoardCatalog } from '../../../shared/boardCatalog'
 
 export const BOARD_INDEX_STORAGE_KEY = 'freeform:board-index:v2'
 export const LEGACY_BOARD_INDEX_STORAGE_KEY = 'freeform:board-index:v1'
@@ -16,6 +17,7 @@ export interface LocalBoard {
 	updatedAt: number
 	lastOpenedAt: number
 	deletedAt: number | null
+	restoredAt?: number
 }
 
 export interface LocalBoardCollection {
@@ -37,6 +39,7 @@ export interface BoardIndexStorage {
 
 export interface UseBoardIndexResult extends LocalBoardCatalog {
 	trashBoards: LocalBoard[]
+	syncStatus: 'saving' | 'saved' | 'unavailable'
 	createBoard(title?: string, collectionId?: string): LocalBoard
 	renameBoard(id: string, title: string): LocalBoard | undefined
 	ensureBoard(id: string): LocalBoard | undefined
@@ -51,6 +54,14 @@ const ROOM_ID_PATTERN = /^[a-zA-Z0-9_-]{1,128}$/
 const memory = new Map<string, string>()
 let browserStorageUnavailable = false
 const failedStorages = new WeakSet<object>()
+const CATALOG_SYNC_EVENT = 'freeform:board-catalog-synced'
+let syncQueue: Promise<unknown> = Promise.resolve()
+let catalogSyncStatus: UseBoardIndexResult['syncStatus'] = 'saving'
+
+function publishCatalogSyncStatus(status: UseBoardIndexResult['syncStatus']): void {
+	catalogSyncStatus = status
+	globalThis.dispatchEvent?.(new Event(CATALOG_SYNC_EVENT))
+}
 
 const memoryStorage: BoardIndexStorage = {
 	getItem(key) { return memory.get(key) ?? null },
@@ -133,6 +144,7 @@ function parseBoard(value: unknown): LocalBoard | undefined {
 		updatedAt: candidate.updatedAt as number,
 		lastOpenedAt,
 		deletedAt,
+		...(Number.isFinite(candidate.restoredAt) ? { restoredAt: candidate.restoredAt as number } : {}),
 	}
 }
 
@@ -159,7 +171,8 @@ function orderCollections(collections: LocalBoardCollection[]): LocalBoardCollec
 }
 
 function defaultCollection(now: number): LocalBoardCollection {
-	return { id: DEFAULT_COLLECTION_ID, title: DEFAULT_COLLECTION_TITLE, createdAt: now, updatedAt: now }
+	// A synthesized collection must not overwrite an existing user rename during migration.
+	return { id: DEFAULT_COLLECTION_ID, title: DEFAULT_COLLECTION_TITLE, createdAt: now, updatedAt: 0 }
 }
 
 function parseCatalog(raw: string, now: number): LocalBoardCatalog | undefined {
@@ -201,6 +214,54 @@ function persistCatalog(storage: BoardIndexStorage, catalog: LocalBoardCatalog):
 		boards: orderBoards(catalog.boards),
 		collections: orderCollections(catalog.collections),
 	}))
+}
+
+function isFreshEmptyCatalog(catalog: LocalBoardCatalog): boolean {
+	return catalog.boards.length === 0 && catalog.collections.length === 1
+		&& catalog.collections[0].id === DEFAULT_COLLECTION_ID && catalog.collections[0].title === DEFAULT_COLLECTION_TITLE
+		&& catalog.collections[0].updatedAt === 0
+}
+
+/** Migrate and reconcile the browser cache with the signed-in owner's SQLite-backed catalog. */
+export async function synchronizeBoardCatalog(
+	storage: BoardIndexStorage = defaultStorage(),
+	fetcher: typeof fetch = fetch,
+	now = Date.now(),
+): Promise<LocalBoardCatalog> {
+	let catalog = readBoardCatalog(storage, now)
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const outgoing: BoardCatalog = isFreshEmptyCatalog(catalog) ? { boards: [], collections: [] } : catalog
+		const response = await fetcher('/api/catalog/sync', {
+			method: 'POST', credentials: 'same-origin', cache: 'no-store',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ catalog: outgoing }),
+		})
+		if (!response.ok) throw new Error(`Could not save board catalog (${response.status})`)
+		const body: unknown = await response.json()
+		if (!body || typeof body !== 'object' || !('catalog' in body)) throw new Error('Invalid board catalog response')
+		const remote = parseBoardCatalog(body.catalog)
+		const current = readBoardCatalog(storage, now)
+		catalog = isFreshEmptyCatalog(current) ? remote : mergeBoardCatalogs(remote, current)
+		if (!catalog.collections.length) catalog.collections = [defaultCollection(now)]
+		persistCatalog(storage, catalog)
+		globalThis.dispatchEvent?.(new Event(CATALOG_SYNC_EVENT))
+		if (isFreshEmptyCatalog(catalog) && remote.boards.length === 0 && remote.collections.length === 0) return catalog
+		if (JSON.stringify(catalog) === JSON.stringify(remote)) return catalog
+	}
+	return catalog
+}
+
+function queueBoardCatalogSync(): Promise<unknown> {
+	publishCatalogSyncStatus('saving')
+	syncQueue = syncQueue.catch(() => undefined).then(() => synchronizeBoardCatalog()).then(
+		() => publishCatalogSyncStatus('saved'),
+		(cause: unknown) => {
+			// The browser cache remains intact and the next navigation or mutation retries sync.
+			console.warn('Board catalog sync is pending', cause instanceof Error ? cause.message : cause)
+			publishCatalogSyncStatus('unavailable')
+		},
+	)
+	return syncQueue
 }
 
 /** Read the local catalog, migrating old board arrays and the original single-room setting. */
@@ -282,7 +343,7 @@ export function ensureLocalBoard(
 		? options.collectionId
 		: catalog.collections[0]?.id ?? DEFAULT_COLLECTION_ID
 	const board = existing
-		? { ...existing, lastOpenedAt: now }
+		? { ...existing, lastOpenedAt: Math.max(now, existing.lastOpenedAt + 1) }
 		: { id, title: options.title ? validateBoardTitle(options.title) : DEFAULT_BOARD_TITLE, collectionId, createdAt: now, updatedAt: now, lastOpenedAt: now, deletedAt: null }
 	persistCatalog(storage, { ...catalog, boards: existing ? catalog.boards.map((item) => item.id === id ? board : item) : [board, ...catalog.boards] })
 	return board
@@ -297,7 +358,7 @@ export function renameLocalBoard(
 	const catalog = readBoardCatalog(storage, now)
 	const existing = catalog.boards.find((board) => board.id === id)
 	if (!existing) return undefined
-	const renamed = { ...existing, title: validateBoardTitle(title), updatedAt: now }
+	const renamed = { ...existing, title: validateBoardTitle(title), updatedAt: Math.max(now, existing.updatedAt + 1) }
 	persistCatalog(storage, { ...catalog, boards: catalog.boards.map((board) => board.id === id ? renamed : board) })
 	return renamed
 }
@@ -333,7 +394,7 @@ export function renameLocalCollection(
 	const catalog = readBoardCatalog(storage, now)
 	const existing = catalog.collections.find((collection) => collection.id === id)
 	if (!existing) return undefined
-	const renamed = { ...existing, title: validateCollectionTitle(title), updatedAt: now }
+	const renamed = { ...existing, title: validateCollectionTitle(title), updatedAt: Math.max(now, existing.updatedAt + 1) }
 	persistCatalog(storage, { ...catalog, collections: catalog.collections.map((collection) => collection.id === id ? renamed : collection) })
 	return renamed
 }
@@ -347,7 +408,7 @@ export function moveLocalBoardToCollection(
 	const catalog = readBoardCatalog(storage, now)
 	const existing = catalog.boards.find((board) => board.id === boardId)
 	if (!existing || !catalog.collections.some((collection) => collection.id === collectionId)) return undefined
-	const moved = { ...existing, collectionId, updatedAt: now }
+	const moved = { ...existing, collectionId, updatedAt: Math.max(now, existing.updatedAt + 1) }
 	persistCatalog(storage, { ...catalog, boards: catalog.boards.map((board) => board.id === boardId ? moved : board) })
 	return moved
 }
@@ -361,7 +422,8 @@ export function softDeleteLocalBoard(
 	const catalog = readBoardCatalog(storage, now)
 	const existing = catalog.boards.find((board) => board.id === id)
 	if (!existing) return undefined
-	const deleted = { ...existing, deletedAt: now, updatedAt: now }
+	const deletedAt = Math.max(now, existing.updatedAt + 1)
+	const deleted = { ...existing, deletedAt, updatedAt: deletedAt }
 	persistCatalog(storage, { ...catalog, boards: catalog.boards.map((board) => board.id === id ? deleted : board) })
 	return deleted
 }
@@ -374,7 +436,8 @@ export function restoreLocalBoard(
 	const catalog = readBoardCatalog(storage, now)
 	const existing = catalog.boards.find((board) => board.id === id)
 	if (!existing) return undefined
-	const restored = { ...existing, deletedAt: null, updatedAt: now }
+	const restoredAt = Math.max(now, existing.updatedAt + 1)
+	const restored = { ...existing, deletedAt: null, restoredAt, updatedAt: restoredAt }
 	persistCatalog(storage, { ...catalog, boards: catalog.boards.map((board) => board.id === id ? restored : board) })
 	return restored
 }
@@ -382,58 +445,91 @@ export function restoreLocalBoard(
 /** Local-first API for board identity and dashboard collection controls. */
 export function useBoardIndex(roomId?: string | null): UseBoardIndexResult {
 	const [catalog, setCatalog] = useState(() => readBoardCatalog())
+	const [syncStatus, setSyncStatus] = useState(() => catalogSyncStatus)
 
-	const refresh = useCallback(() => setCatalog(readBoardCatalog()), [])
+	const refresh = useCallback(() => {
+		setCatalog(readBoardCatalog())
+		setSyncStatus(catalogSyncStatus)
+	}, [])
 	useEffect(() => {
-		if (roomId) {
+		let active = true
+		void queueBoardCatalogSync().then(() => {
+			if (!active || !roomId) return
 			ensureLocalBoard(roomId)
 			refresh()
-		}
+			void queueBoardCatalogSync()
+		})
 		const onStorage = (event: StorageEvent) => {
-			if (!event.key || event.key === BOARD_INDEX_STORAGE_KEY || event.key === LEGACY_BOARD_INDEX_STORAGE_KEY) refresh()
+			if (!event.key || event.key === BOARD_INDEX_STORAGE_KEY || event.key === LEGACY_BOARD_INDEX_STORAGE_KEY) {
+				refresh()
+				void queueBoardCatalogSync()
+			}
 		}
+		const retryIfNeeded = () => {
+			if (catalogSyncStatus === 'unavailable') void queueBoardCatalogSync()
+		}
+		const onVisible = () => { if (document.visibilityState === 'visible') retryIfNeeded() }
+		const retryTimer = globalThis.setInterval?.(retryIfNeeded, 30_000)
 		globalThis.addEventListener?.('storage', onStorage)
-		return () => globalThis.removeEventListener?.('storage', onStorage)
+		globalThis.addEventListener?.('online', retryIfNeeded)
+		globalThis.addEventListener?.('visibilitychange', onVisible)
+		globalThis.addEventListener?.(CATALOG_SYNC_EVENT, refresh)
+		return () => {
+			active = false
+			globalThis.clearInterval?.(retryTimer)
+			globalThis.removeEventListener?.('storage', onStorage)
+			globalThis.removeEventListener?.('online', retryIfNeeded)
+			globalThis.removeEventListener?.('visibilitychange', onVisible)
+			globalThis.removeEventListener?.(CATALOG_SYNC_EVENT, refresh)
+		}
 	}, [roomId, refresh])
 
 	const createBoard = useCallback((title = DEFAULT_BOARD_TITLE, collectionId?: string) => {
 		const board = createLocalBoard(title, defaultStorage(), { collectionId })
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 	const renameBoard = useCallback((id: string, title: string) => {
 		const board = renameLocalBoard(id, title)
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 	const ensureBoard = useCallback((id: string) => {
 		const board = ensureLocalBoard(id)
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 	const createCollection = useCallback((title?: string) => {
 		const collection = createLocalCollection(title)
 		refresh()
+		void queueBoardCatalogSync()
 		return collection
 	}, [refresh])
 	const renameCollection = useCallback((id: string, title: string) => {
 		const collection = renameLocalCollection(id, title)
 		refresh()
+		void queueBoardCatalogSync()
 		return collection
 	}, [refresh])
 	const moveBoard = useCallback((boardId: string, collectionId: string) => {
 		const board = moveLocalBoardToCollection(boardId, collectionId)
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 	const deleteBoard = useCallback((id: string) => {
 		const board = softDeleteLocalBoard(id)
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 	const restoreBoard = useCallback((id: string) => {
 		const board = restoreLocalBoard(id)
 		refresh()
+		void queueBoardCatalogSync()
 		return board
 	}, [refresh])
 
@@ -441,6 +537,7 @@ export function useBoardIndex(roomId?: string | null): UseBoardIndexResult {
 		boards: catalog.boards.filter((board) => board.deletedAt === null),
 		collections: catalog.collections,
 		trashBoards: catalog.boards.filter((board) => board.deletedAt !== null),
+		syncStatus,
 		createBoard,
 		renameBoard,
 		ensureBoard,

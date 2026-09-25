@@ -65,6 +65,8 @@ const router = AutoRouter<IRequest, [env: Env, ctx: ExecutionContext]>({
 	.post('/api/register', authApi)
 	.post('/api/login', authApi)
 	.post('/api/logout', authApi)
+	.get('/api/catalog', authApi)
+	.post('/api/catalog/sync', authApi)
 	.all('/api/mcp/tokens', authApi)
 	.post('/api/ai/models', (request, env) => protectedRoute(request, env, () => handleAiModels(request)))
 	.post('/api/ai/chat', (request, env) => protectedRoute(request, env, () => handleAiChat(request)))

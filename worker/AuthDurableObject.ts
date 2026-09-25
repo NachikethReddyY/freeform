@@ -9,13 +9,14 @@ import {
 	type AuthKv,
 	type AuthStore,
 } from './auth'
+import { CatalogStore } from './catalogStore'
 
 const jsonHeaders = { 'Cache-Control': 'no-store', 'Content-Type': 'application/json; charset=utf-8' }
 
-async function readJson(request: Request): Promise<Record<string, unknown>> {
+async function readJson(request: Request, maxBytes = 2048): Promise<Record<string, unknown>> {
 	if (request.headers.get('content-type')?.split(';')[0].trim() !== 'application/json') throw new AuthError(415, 'Use application/json')
 	const declared = Number(request.headers.get('content-length') ?? 0)
-	if (declared > 2048) throw new AuthError(413, 'Request is too large')
+	if (declared > maxBytes) throw new AuthError(413, 'Request is too large')
 	if (!request.body) throw new AuthError(400, 'Missing request body')
 	const reader = request.body.getReader()
 	const chunks: Uint8Array[] = []
@@ -25,7 +26,7 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 			const { done, value } = await reader.read()
 			if (done) break
 			length += value.byteLength
-			if (length > 2048) { await reader.cancel(); throw new AuthError(413, 'Request is too large') }
+			if (length > maxBytes) { await reader.cancel(); throw new AuthError(413, 'Request is too large') }
 			chunks.push(value)
 		}
 	} finally { reader.releaseLock() }
@@ -41,6 +42,7 @@ async function readJson(request: Request): Promise<Record<string, unknown>> {
 
 export class AuthDurableObject extends DurableObject {
 	private readonly service: OwnerAuthService
+	private readonly catalog: CatalogStore
 
 	constructor(ctx: DurableObjectState, env: Env) {
 		super(ctx, env)
@@ -56,6 +58,7 @@ export class AuthDurableObject extends DurableObject {
 			transaction: <T>(fn: (tx: AuthKv) => Promise<T>) => storage.transaction((tx) => fn(adapt(tx))),
 		}
 		this.service = new OwnerAuthService(store)
+		this.catalog = new CatalogStore(store)
 	}
 
 	async fetch(request: Request): Promise<Response> {
@@ -76,6 +79,19 @@ export class AuthDurableObject extends DurableObject {
 			}
 			assertLocalAuthRequest(request)
 			if (path === '/api/me' && request.method === 'GET') return Response.json(await this.service.me(token), { headers: jsonHeaders })
+			if (path === '/api/catalog' && request.method === 'GET') {
+				if (!(await this.service.me(token)).authenticated) throw new AuthError(401, 'Sign in to access your catalog')
+				return Response.json(await this.catalog.read(), { headers: jsonHeaders })
+			}
+			if (path === '/api/catalog/sync' && request.method === 'POST') {
+				if (!(await this.service.me(token)).authenticated) throw new AuthError(401, 'Sign in to access your catalog')
+				const input = await readJson(request, 2_000_000)
+				try { return Response.json(await this.catalog.sync(input.catalog), { headers: jsonHeaders }) }
+				catch (cause) {
+					if (cause instanceof Error && cause.message.startsWith('Invalid') || cause instanceof Error && cause.message.startsWith('Duplicate') || cause instanceof Error && cause.message.startsWith('Board references')) throw new AuthError(400, cause.message)
+					throw cause
+				}
+			}
 			if (path === '/api/register' && request.method === 'POST') {
 				const input = await readJson(request)
 				if (typeof input.password !== 'string') throw new AuthError(400, 'Enter a password')

@@ -220,6 +220,7 @@ export function BoardDashboard() {
 		boards,
 		collections,
 		trashBoards,
+		syncStatus,
 		createBoard,
 		createCollection,
 		renameCollection,
@@ -348,6 +349,9 @@ export function BoardDashboard() {
 			<main className="board-dashboard-main">
 				<div className="board-dashboard-title-row">
 					<h1>{inTrash ? 'Trash' : selectedCollection?.title ?? 'Dashboard'}</h1>
+					{syncStatus !== 'saved' && <span className="board-dashboard-sync-status" role="status">
+						{syncStatus === 'unavailable' ? 'Local only · server unavailable' : 'Saving boards…'}
+					</span>}
 					{!inTrash && <button type="button" className="board-dashboard-start" onClick={startBoard}>
 						<svg viewBox="0 0 20 20" aria-hidden="true"><path d="m3 17 3.7-.8L16.5 6.4a2 2 0 0 0-2.9-2.9L3.8 13.3 3 17Z" /><path d="m12.7 4.4 2.9 2.9" /></svg>
 						<span>Start drawing</span>

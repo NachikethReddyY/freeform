@@ -17,6 +17,7 @@ import {
 	renameLocalCollection,
 	renameLocalBoard,
 	softDeleteLocalBoard,
+	synchronizeBoardCatalog,
 	validateBoardTitle,
 	type BoardIndexStorage,
 } from './boardIndex'
@@ -174,4 +175,60 @@ test('falls back to an in-memory board index when browser storage is denied', ()
 
 	assert.equal(ensureLocalBoard('private-room', deniedStorage, { now: 50 })?.id, 'private-room')
 	assert.equal(readBoardIndex(deniedStorage, 60)[0]?.id, 'private-room')
+})
+
+test('hydrates a fresh browser cache from the owner catalog and preserves Trash', async () => {
+	const storage = new MemoryStorage()
+	const serverCatalog = {
+		boards: [{ id: 'remote-board', title: 'Recovered', collectionId: DEFAULT_COLLECTION_ID, createdAt: 1, updatedAt: 3, lastOpenedAt: 3, deletedAt: 3 }],
+		collections: [{ id: DEFAULT_COLLECTION_ID, title: DEFAULT_COLLECTION_TITLE, createdAt: 1, updatedAt: 1 }],
+	}
+	const fetcher: typeof fetch = async (_input, init) => {
+		const sent = JSON.parse(String(init?.body))
+		assert.deepEqual(sent.catalog.boards, [])
+		return Response.json({ revision: 1, catalog: serverCatalog })
+	}
+	const result = await synchronizeBoardCatalog(storage, fetcher, 100)
+	assert.equal(result.boards[0]?.id, 'remote-board')
+	assert.equal(readBoardCatalog(storage).boards[0]?.deletedAt, 3)
+})
+
+test('sync preserves an intentional empty-collection rename back to the default title', async () => {
+	const storage = new MemoryStorage()
+	const remote = { boards: [], collections: [{ id: DEFAULT_COLLECTION_ID, title: 'Research', createdAt: 1, updatedAt: 10 }] }
+	storage.setItem(BOARD_INDEX_STORAGE_KEY, JSON.stringify({ version: 2, boards: [], collections: [
+		{ id: DEFAULT_COLLECTION_ID, title: DEFAULT_COLLECTION_TITLE, createdAt: 1, updatedAt: 11 },
+	] }))
+	let calls = 0
+	const fetcher: typeof fetch = async (_input, init) => {
+		calls++
+		const sent = JSON.parse(String(init?.body))
+		assert.equal(sent.catalog.collections[0]?.title, DEFAULT_COLLECTION_TITLE)
+		return Response.json({ revision: calls, catalog: { boards: [], collections: [
+			calls === 1 ? remote.collections[0] : sent.catalog.collections[0],
+		] } })
+	}
+	const result = await synchronizeBoardCatalog(storage, fetcher, 20)
+	assert.equal(result.collections[0].title, DEFAULT_COLLECTION_TITLE)
+	assert.equal(result.collections[0].updatedAt, 11)
+	assert.equal(calls, 2)
+})
+
+test('an in-flight server response cannot erase a newer local rename', async () => {
+	const storage = new MemoryStorage()
+	createLocalBoard('Old', storage, { now: 1, createId: () => 'board-race' })
+	let respond!: (value: Response) => void
+	const fetcher: typeof fetch = async (_input, init) => {
+		const sent = JSON.parse(String(init?.body))
+		if (sent.catalog.boards[0].title === 'New') return Response.json({ revision: 2, catalog: sent.catalog })
+		return new Promise((resolve) => { respond = resolve })
+	}
+	const pending = synchronizeBoardCatalog(storage, fetcher, 10)
+	renameLocalBoard('board-race', 'New', storage, 20)
+	respond(Response.json({ revision: 1, catalog: {
+		boards: [{ id: 'board-race', title: 'Old', collectionId: DEFAULT_COLLECTION_ID, createdAt: 1, updatedAt: 1, lastOpenedAt: 1, deletedAt: null }],
+		collections: [{ id: DEFAULT_COLLECTION_ID, title: DEFAULT_COLLECTION_TITLE, createdAt: 1, updatedAt: 1 }],
+	} }))
+	await pending
+	assert.equal(readBoardCatalog(storage).boards[0]?.title, 'New')
 })

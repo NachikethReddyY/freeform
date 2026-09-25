@@ -201,6 +201,8 @@
 .board-dashboard-main { min-width: 0; overflow: auto; padding: clamp(26px, 3.5vw, 48px); }
 .board-dashboard-title-row { max-width: 1440px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 auto 27px; padding-bottom: 28px; border-bottom: 1px solid #35353d; }
 .board-dashboard-title-row h1 { margin: 0; font-size: clamp(27px, 2.5vw, 34px); font-weight: 600; letter-spacing: -.025em; line-height: 1.2; }
+.board-dashboard-sync-status { margin-left: auto; color: var(--dashboard-muted); font-size: 12px; white-space: nowrap; }
+.board-dashboard-sync-status + .board-dashboard-start { margin-left: 0; }
 .board-dashboard-start { min-height: 38px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none; padding: 8px 14px; border: 1px solid #8bb9ff; border-radius: 6px; background: #8bb9ff; color: #12253c !important; font-size: 13px; font-weight: 600; cursor: pointer; }
 .board-dashboard-start:hover { background: #a9ceff; border-color: #a9ceff; }
 .board-dashboard-start svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -311,7 +313,10 @@
 	.board-dashboard-collection-row > .board-dashboard-rename-collection { width: 26px; }
 	.board-dashboard-trash { margin-top: 0; }
 	.board-dashboard-main { padding: 20px 14px 32px; }
-	.board-dashboard-title-row { margin-bottom: 22px; padding-bottom: 20px; }
+	.board-dashboard-title-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 6px; margin-bottom: 22px; padding-bottom: 20px; }
+	.board-dashboard-title-row h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.board-dashboard-title-row .board-dashboard-sync-status { grid-column: 1 / -1; grid-row: 2; margin-left: 0; }
+	.board-dashboard-title-row .board-dashboard-start { grid-column: 2; grid-row: 1; }
 	.board-dashboard-section-row { flex-wrap: wrap; }
 	.board-dashboard-content-actions { flex-wrap: wrap; }
 	.board-dashboard-grid { grid-template-columns: repeat(auto-fill, minmax(min(265px, 100%), 1fr)); gap: 12px; }
