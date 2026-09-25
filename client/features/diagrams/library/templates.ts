@@ -81,7 +81,7 @@ export const STARTERS: readonly Starter[] = [
 				node('database', 'rectangle', 'Database', 780, 0, 170, 88),
 				node('queue', 'rectangle', 'Job queue', 780, 240, 170, 88)],
 			edges: [edge('http', 'browser', 'route', 'HTTP'), edge('call', 'route', 'service'),
-				edge('query', 'service', 'database', 'read/write'), edge('publish', 'service', 'queue', 'enqueue')],
+				edge('query', 'service', 'database', 'Query'), edge('publish', 'service', 'queue', 'Job')],
 		}) },
 	{
 		id: 'data-model', title: 'Data model', diagram: DiagramSchema.parse({ title: 'Data model',

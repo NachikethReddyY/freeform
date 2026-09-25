@@ -5,7 +5,6 @@ import {
 	type ArrowShapeUtilDisplayValues,
 	type Editor,
 	Group2d,
-	PathBuilder,
 	Rectangle2d,
 	SVGContainer,
 	Vec,
@@ -28,11 +27,10 @@ function curvePath(util: FreeformArrowShapeUtil, shape: TLArrowShape) {
 }
 
 function displayedPath(util: FreeformArrowShapeUtil, shape: TLArrowShape) {
-	const curved = curvePath(util, shape)
-	if (curved) return curved
-	if (shape.props.kind !== 'arc' || shape.props.bend !== 0) return null
-	const info = getArrowInfo(util.editor, shape)
-	return info ? PathBuilder.lineThroughPoints([info.start.point, info.end.point], { endOffsets: 0 }) : null
+	// Let the SDK render ordinary arrows. Its label position can be clamped away
+	// from bound nodes; our straight-path midpoint would leave the stroke visible
+	// through that label. Only edited curves need FreeForm's custom path.
+	return curvePath(util, shape)
 }
 
 function curveLabelCenter(util: FreeformArrowShapeUtil, shape: TLArrowShape) {
