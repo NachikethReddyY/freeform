@@ -46,6 +46,8 @@ import { ConnectedNodeControls } from '../features/diagrams/connectedNodeControl
 import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../features/diagrams/layout'
 import { PresentationControls } from '../features/presentation/presentation'
 import { diagramFromClipboard, type IncomingPasteDiagram } from '../features/paste/diagramPaste'
+import { cardFromClipboard, type IncomingPasteCard } from '../features/paste/cardPaste'
+import { CardPastePanel } from '../features/paste/CardPastePanelEntry'
 import { BoardFiles } from '../features/portability/BoardFiles'
 import { BoardSearch } from '../features/search/SearchPanel'
 import { AIChatPanel } from '../features/ai/AIChatPanel'
@@ -239,9 +241,10 @@ function FreeformStylePanel() {
 
 function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTMLElement | null }) {
 	const editor = useEditor()
-	const [panel, setPanel] = useState<'style' | 'diagrams'>('style')
+	const [panel, setPanel] = useState<'style' | 'diagrams' | 'paste'>('style')
 	const [open, setOpen] = useState(true)
 	const [incoming, setIncoming] = useState<(IncomingPasteDiagram & { id: string }) | undefined>()
+	const [incomingCard, setIncomingCard] = useState<{ id: string; card: IncomingPasteCard; pageId: ReturnType<typeof editor.getCurrentPageId> }>()
 	const styleContext = useValue('freeform style context', () => ({
 		selected: editor.getSelectedShapeIds().length > 0,
 		selectionKey: editor.getSelectedShapeIds().join(','),
@@ -249,7 +252,7 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 	}), [editor])
 	const darkMode = useValue('freeform dark mode', () => editor.user.getIsDarkMode(), [editor])
 	const hasStyleSettings = styleContext.selected || !['select', 'hand', 'zoom', 'laser', 'eraser', 'asset', 'frame'].includes(styleContext.tool)
-	const showPanel = open && (panel === 'diagrams' || hasStyleSettings)
+	const showPanel = open && (panel === 'diagrams' || panel === 'paste' || hasStyleSettings)
 	useEffect(() => {
 		if (!hasStyleSettings) return
 		setIncoming(undefined)
@@ -266,6 +269,17 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 		if (!win) return
 		win.addEventListener('freeform:paste-diagram', onDiagramPaste)
 		return () => win.removeEventListener('freeform:paste-diagram', onDiagramPaste)
+	}, [editor])
+	useEffect(() => {
+		const onCardPaste = (event: Event) => {
+			setIncomingCard((event as CustomEvent<{ id: string; card: IncomingPasteCard; pageId: ReturnType<typeof editor.getCurrentPageId> }>).detail)
+			setPanel('paste')
+			setOpen(true)
+		}
+		const win = editor.getContainer().ownerDocument.defaultView
+		if (!win) return
+		win.addEventListener('freeform:paste-card', onCardPaste)
+		return () => win.removeEventListener('freeform:paste-card', onCardPaste)
 	}, [editor])
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -289,7 +303,9 @@ function BoardMenuPanel({ roomId, styleHost }: { roomId: string; styleHost: HTML
 		{styleHost && createPortal(<div className={`freeform-left-shell tl-theme__${darkMode ? 'dark' : 'light'}`} data-open={open} data-panel={panel}>
 			{showPanel && <div className="freeform-left-panel">
 				<div className="freeform-panel-body">
-					{panel === 'style' ? <FreeformStylePanel /> : <DiagramProposalPanel editor={editor} roomId={roomId} incoming={incoming} onClose={() => { setIncoming(undefined); setPanel('style') }} />}
+					{panel === 'style' ? <FreeformStylePanel /> : panel === 'diagrams'
+						? <DiagramProposalPanel editor={editor} roomId={roomId} incoming={incoming} onClose={() => { setIncoming(undefined); setPanel('style') }} />
+						: incomingCard && <CardPastePanel key={incomingCard.id} editor={editor} card={incomingCard.card} pageId={incomingCard.pageId} onClose={() => { setIncomingCard(undefined); setPanel('style') }} />}
 				</div>
 			</div>}
 		</div>, styleHost)}
@@ -332,15 +348,23 @@ export function Room() {
 				overrides={boardOverrides}
 				themes={boardThemes}
 				options={{ deepLinks: true, onClipboardPasteRaw: (info) => {
-					if (info.source !== 'native-event') return
+					if (info.source !== 'native-event' || info.editor.getEditingShapeId()) return
 					const diagram = diagramFromClipboard(info.clipboardData)
-					if (!diagram) return
 					const win = info.editor.getContainer().ownerDocument.defaultView
 					if (!win) return
-					win.dispatchEvent(new CustomEvent('freeform:paste-diagram', {
-						detail: { ...diagram, id: crypto.randomUUID() },
-					}))
-					return false
+					if (diagram) {
+						win.dispatchEvent(new CustomEvent('freeform:paste-diagram', {
+							detail: { ...diagram, id: crypto.randomUUID() },
+						}))
+						return false
+					}
+					const card = cardFromClipboard(info.clipboardData)
+					if (card) {
+						win.dispatchEvent(new CustomEvent('freeform:paste-card', {
+							detail: { id: crypto.randomUUID(), card, pageId: info.editor.getCurrentPageId() },
+						}))
+						return false
+					}
 				} }}
 				onMount={(editor) => {
 					// when the editor is ready, we need to register our bookmark unfurling service

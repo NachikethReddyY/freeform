@@ -1,0 +1,35 @@
+.freeform-paste-panel { display: grid; gap: 10px; width: 100%; min-width: 0; color: var(--tl-color-text); font: 13px/1.4 'Geist Sans', sans-serif; pointer-events: auto; }
+.freeform-paste-panel header { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.freeform-paste-panel h2 { margin: 2px 0 0; font: 600 15px/1.25 'Geist Sans', sans-serif; }
+.freeform-paste-kind { color: var(--tl-color-text-3); font-size: 11px; }
+.freeform-paste-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.freeform-paste-view-switch { display: flex; gap: 4px; padding: 3px; width: fit-content; border: 1px solid var(--tl-color-divider); border-radius: 8px; background: var(--tl-color-low); }
+.freeform-paste-panel .freeform-paste-view-switch button { min-height: 26px; padding: 3px 10px; border: 0; background: transparent; }
+.freeform-paste-panel .freeform-paste-view-switch button[aria-pressed='true'] { background: var(--tl-color-muted-1); color: var(--tl-color-text); }
+.freeform-paste-preview { box-sizing: border-box; min-height: 140px; max-height: min(280px, 40dvh); padding: 10px; overflow: auto; border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); overflow-wrap: anywhere; }
+.freeform-paste-preview :first-child { margin-top: 0; }
+.freeform-paste-preview :last-child { margin-bottom: 0; }
+.freeform-paste-markdown h3, .freeform-paste-markdown h4, .freeform-paste-markdown h5, .freeform-paste-markdown h6 { margin: 12px 0 5px; font: 650 15px/1.3 'Geist Sans', sans-serif; }
+.freeform-paste-markdown p { margin: 5px 0; }
+.freeform-paste-markdown ul, .freeform-paste-markdown ol { margin: 6px 0; padding-left: 21px; }
+.freeform-paste-markdown li { margin: 3px 0; }
+.freeform-paste-markdown blockquote { margin: 8px 0; padding-left: 9px; border-left: 2px solid var(--tl-color-divider); color: var(--tl-color-text-3); }
+.freeform-paste-markdown code, .freeform-paste-markdown pre, .freeform-paste-code pre { font: 12px/1.55 ui-monospace, SFMono-Regular, monospace; }
+.freeform-paste-markdown pre, .freeform-paste-code pre { margin: 5px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.freeform-paste-preview a { color: var(--tl-color-primary); text-decoration: underline; }
+.freeform-paste-link { display: grid; align-content: start; gap: 7px; }
+.freeform-paste-code-label { font-size: 11px; color: var(--tl-color-text-3); }
+.freeform-paste-token-keyword { color: #7daeff; }
+.freeform-paste-token-string { color: #a9d591; }
+.freeform-paste-token-number { color: #f5bd78; }
+.freeform-paste-token-comment { color: var(--tl-color-text-3); }
+.freeform-paste-panel button { min-height: 32px; padding: 5px 9px; border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text); font: inherit; cursor: pointer; }
+.freeform-paste-panel button:hover { background: var(--tl-color-muted-1); }
+.freeform-paste-panel button:focus-visible, .freeform-paste-source:focus-visible { outline: 2px solid var(--tl-color-selected); outline-offset: 2px; }
+.freeform-paste-panel .freeform-paste-close { display: grid; place-items: center; flex: none; width: 30px; min-height: 30px; padding: 5px; border: 0; background: transparent; }
+.freeform-paste-close svg { width: 16px; height: 16px; }
+.freeform-paste-source { box-sizing: border-box; width: 100%; min-height: 140px; max-height: min(280px, 40dvh); resize: vertical; padding: 8px; overflow: auto; border: 1px solid var(--tl-color-divider); border-radius: 6px; background: var(--tl-color-low); color: var(--tl-color-text); font: 12px/1.5 ui-monospace, SFMono-Regular, monospace; white-space: pre; }
+.freeform-paste-error { margin: 0; color: #e58d8d; overflow-wrap: anywhere; }
+.freeform-paste-actions { display: flex; align-items: center; gap: 7px; }
+.freeform-paste-panel .freeform-paste-accept { border-color: transparent; background: var(--tl-color-primary); color: var(--tl-color-primary-contrast); font-weight: 600; }
+.freeform-paste-panel .freeform-paste-accept:hover { filter: brightness(1.08); background: var(--tl-color-primary); }
