@@ -27,7 +27,7 @@ export function completeSessionRecheck(status: AuthStatus, session: AuthSession)
 
 export function AuthenticatedWorkspace({ checking, children }: { checking: boolean; children: ReactNode }) {
 	return <>
-		<div style={{ display: 'contents', visibility: checking ? 'hidden' : 'visible' }} aria-hidden={checking} inert={checking}>
+		<div data-freeform-auth-checking={checking ? 'true' : 'false'} style={{ display: 'contents', visibility: checking ? 'hidden' : 'visible' }} aria-hidden={checking} inert={checking}>
 			{children}
 		</div>
 		{checking && <main className="freeform-auth-page" style={{ zIndex: 10000 }}><span className="freeform-auth-loading" role="status">Opening FreeForm…</span></main>}

@@ -135,6 +135,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 		const roomId = window.location.pathname.slice(1)
 		if (!/^[a-zA-Z0-9_-]{1,128}$/.test(roomId)) return
 		const host = createPresentationRemoteHost({ roomId, getState: () => remoteState.current, onCommand: (command: PresentationRemoteCommand) => {
+			if (editor.getContainer().closest('[data-freeform-auth-checking="true"]')) return
 			switch (command.action) {
 				case 'previous': remoteActions.current.onPrevious(); break
 				case 'next': remoteActions.current.onNext(); break
