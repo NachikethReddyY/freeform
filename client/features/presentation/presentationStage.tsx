@@ -62,21 +62,22 @@ function Icon({ name }: { name: 'previous' | 'next' | 'laser' | 'hide' | 'show' 
 
 interface LaserPoint { id: number; x: number; y: number }
 interface LaserSegment { id: number; x1: number; y1: number; x2: number; y2: number }
+interface LaserAnchor { x: number; y: number; at: number; lastMotionAt?: number }
 
-export function getLaserSegment(previous: { x: number; y: number; at: number } | null, x: number, y: number, now: number, id: number): LaserSegment | null {
-	if (!previous || now - previous.at > 130) return null
+export function getLaserSegment(previous: LaserAnchor | null, x: number, y: number, now: number, id: number): LaserSegment | null {
+	if (!previous || now - (previous.lastMotionAt ?? previous.at) > 130) return null
 	const distance = Math.hypot(x - previous.x, y - previous.y)
 	if (distance < 2 || distance > 320) return null
 	return { id, x1: previous.x, y1: previous.y, x2: x, y2: y }
 }
 
 /** Keep the last drawn point until small pointer movements add up to a visible stroke. */
-export function advanceLaserTrail(previous: { x: number; y: number; at: number } | null, x: number, y: number, now: number, id: number) {
+export function advanceLaserTrail(previous: LaserAnchor | null, x: number, y: number, now: number, id: number) {
 	const segment = getLaserSegment(previous, x, y, now, id)
 	const distance = previous ? Math.hypot(x - previous.x, y - previous.y) : 0
-	const anchor = segment || !previous || now - previous.at > 130 || distance > 320
-		? { x, y, at: now }
-		: previous
+	const anchor = segment || !previous || now - (previous.lastMotionAt ?? previous.at) > 130 || distance > 320
+		? { x, y, at: now, lastMotionAt: now }
+		: { ...previous, lastMotionAt: now }
 	return { anchor, segment }
 }
 
@@ -99,7 +100,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 	const pending = useRef(new Set<string>())
 	const mounted = useRef(false)
 	const pointId = useRef(0)
-	const lastLaserPoint = useRef<{ x: number; y: number; at: number } | null>(null)
+	const lastLaserPoint = useRef<LaserAnchor | null>(null)
 	const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight })
 	const [revision, redraw] = useState(0)
 	const [failedExports, setFailedExports] = useState<Set<string>>(() => new Set())

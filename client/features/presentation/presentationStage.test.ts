@@ -70,3 +70,14 @@ test('slow one-pixel pointer movements accumulate into a short visible laser tra
 	const resumed = advanceLaserTrail(anchor, 40, 20, 900, 50)
 	assert.equal(resumed.segment, null, 'a pause starts a fresh trail instead of connecting distant positions')
 })
+
+test('slow continuous laser movement stays connected when each pixel takes nearly the pause limit', () => {
+	let anchor: { x: number; y: number; at: number } | null = null
+	const segments = []
+	for (let x = 0; x <= 6; x++) {
+		const result = advanceLaserTrail(anchor, x, 20, x * 100, x)
+		anchor = result.anchor
+		if (result.segment) segments.push(result.segment)
+	}
+	assert.ok(segments.length >= 3, 'continuous one-pixel movement should become a visible trail')
+})
