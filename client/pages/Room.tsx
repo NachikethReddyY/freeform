@@ -172,7 +172,7 @@ function BoardZoomPanel() {
 			</details>
 			<button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => actions['zoom-in'].onSelect('navigation-zone')}>+</button>
 			<button type="button" aria-label="Minimap" title="Minimap" aria-pressed={minimapOpen} onClick={() => { presets.current?.removeAttribute('open'); setMinimapOpen((open) => !open) }}>
-				<svg className="freeform-minimap-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" /><rect x="5.5" y="6.5" width="7" height="5" rx=".5" /><path d="M15 15h3m-3 2h3" /></svg>
+				<svg className="freeform-minimap-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15m6-12v15" /></svg>
 			</button>
 			{minimapOpen && <div className="freeform-minimap-panel" role="group" aria-label="Minimap navigation" onPointerDown={(event) => event.stopPropagation()}>
 				<button type="button" className="freeform-minimap-close" aria-label="Close minimap" title="Close minimap" onClick={() => setMinimapOpen(false)}>×</button>
