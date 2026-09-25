@@ -120,6 +120,50 @@ test('stopping an inbound chat request aborts the upstream provider call', async
 	assert.equal(response.status, 499)
 })
 
+test('stopping while reading a provider response cancels the body before its next chunk', async () => {
+	const controller = new AbortController()
+	const request = new Request(`${origin}/api/ai/chat`, {
+		method: 'POST', headers: { 'content-type': 'application/json', origin },
+		body: JSON.stringify({ ...modelConnection, model: 'model-a', messages: [{ role: 'user', content: 'hello' }] }),
+		signal: controller.signal,
+	})
+	let reading!: () => void
+	const startedReading = new Promise<void>((resolve) => { reading = resolve })
+	let canceled = false
+	const responsePromise = handleAiChat(request, async () => new Response(new ReadableStream<Uint8Array>({
+		pull() {
+			reading()
+		},
+		cancel() { canceled = true },
+	}, { highWaterMark: 0 })))
+	await startedReading
+	controller.abort()
+	let timer: ReturnType<typeof setTimeout> | undefined
+	const response = await Promise.race([
+		responsePromise,
+		new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error('Provider body was not canceled promptly')), 250) }),
+	]).finally(() => clearTimeout(timer))
+	assert.equal(response.status, 499)
+	assert.equal(canceled, true)
+	assert.deepEqual(await response.json(), { error: 'AI request canceled' })
+})
+
+test('a response body is canceled when Stop wins the race after provider headers', async () => {
+	const controller = new AbortController()
+	const request = new Request(`${origin}/api/ai/chat`, {
+		method: 'POST', headers: { 'content-type': 'application/json', origin },
+		body: JSON.stringify({ ...modelConnection, model: 'model-a', messages: [{ role: 'user', content: 'hello' }] }),
+		signal: controller.signal,
+	})
+	let canceled = false
+	const response = await handleAiChat(request, async () => {
+		controller.abort()
+		return new Response(new ReadableStream<Uint8Array>({ cancel() { canceled = true } }, { highWaterMark: 0 }))
+	})
+	assert.equal(response.status, 499)
+	assert.equal(canceled, true)
+})
+
 test('rejects cross-origin calls, invalid bodies, upstream redirects and oversized responses', async () => {
 	let calls = 0
 	const fetcher: typeof fetch = async () => { calls++; return Response.json({ data: [] }) }

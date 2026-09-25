@@ -70,24 +70,31 @@ async function readBoundedJson(request: Request): Promise<unknown> {
 	const declared = Number(request.headers.get('content-length') ?? 0)
 	if (declared > REQUEST_BYTES) throw new AiGatewayError(413, 'AI request exceeds 64 KiB')
 	if (!request.body) throw new AiGatewayError(400, 'Missing JSON body')
-	const bytes = await readBytes(request.body, REQUEST_BYTES, 413, 'AI request exceeds 64 KiB')
+	const bytes = await readBytes(request.body, REQUEST_BYTES, 413, 'AI request exceeds 64 KiB', request.signal)
 	try { return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) }
 	catch { throw new AiGatewayError(400, 'Invalid JSON body') }
 }
 
-async function readBytes(stream: ReadableStream<Uint8Array>, limit: number, status: number, message: string): Promise<Uint8Array> {
+async function readBytes(stream: ReadableStream<Uint8Array>, limit: number, status: number, message: string, signal?: AbortSignal): Promise<Uint8Array> {
 	const reader = stream.getReader()
 	const chunks: Uint8Array[] = []
 	let length = 0
+	const cancelOnAbort = () => { void reader.cancel(signal?.reason).catch(() => {}) }
+	signal?.addEventListener('abort', cancelOnAbort, { once: true })
 	try {
 		while (true) {
+			if (signal?.aborted) {
+				await reader.cancel(signal.reason).catch(() => {})
+				throw new AiGatewayError(499, 'AI request canceled')
+			}
 			const { done, value } = await reader.read()
+			if (signal?.aborted) throw new AiGatewayError(499, 'AI request canceled')
 			if (done) break
 			length += value.byteLength
 			if (length > limit) { await reader.cancel(); throw new AiGatewayError(status, message) }
 			chunks.push(value)
 		}
-	} finally { reader.releaseLock() }
+	} finally { signal?.removeEventListener('abort', cancelOnAbort); reader.releaseLock() }
 	const bytes = new Uint8Array(length)
 	let offset = 0
 	for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength }
@@ -120,7 +127,7 @@ async function providerJson(url: URL, apiKey: string | undefined, fetcher: Gatew
 	if (declared > RESPONSE_BYTES) throw new AiGatewayError(502, 'Model provider response is too large')
 	if (!response.body) throw new AiGatewayError(502, 'Model provider returned an empty response')
 	let bytes: Uint8Array
-	try { bytes = await readBytes(response.body, RESPONSE_BYTES, 502, 'Model provider response is too large') }
+	try { bytes = await readBytes(response.body, RESPONSE_BYTES, 502, 'Model provider response is too large', providerSignal) }
 	catch (cause) {
 		if (signal?.aborted) throw new AiGatewayError(499, 'AI request canceled')
 		if (timeout.aborted) throw new AiGatewayError(504, 'Model provider timed out')
