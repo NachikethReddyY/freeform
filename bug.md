@@ -9,25 +9,46 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 | Area | Status | Evidence sample | Confidence / limit |
 | --- | --- | --- | --- |
 | Bold text | Editor/SVG/selected PNG/thumbnail pass | One synthetic regular/bold phrase showed heavier bold in the editor, downloaded selection PNG and saved text-only card after reload | Other fonts and larger boards need proof |
-| Latest editor layout | Named states pass | 1280px prior check; 1016px selected-card, 720px toolbar, More, existing-shape reopen, action icons, compact card and tool-lock browser checks | Remaining mobile/theme combinations remain open |
+| Latest editor layout | Named states pass | 1280px prior check; 1016px selected-card, 720px toolbar, More, existing-shape reopen, action icons, compact card and tool-lock browser checks; Safari 720px full title and 390px ellipsized title stayed clear of utilities | Remaining mobile/theme combinations remain open |
 | Dashboard hook crash | Fresh workflow matrix passes; cause unresolved | Zen create/open/search/select/rename/move/delete/restore/collection rename/reload transitions without recurrence; 20 board tests | Original failing hook/cause not identified |
 | Dashboard actions/previews | Named flows pass | Rename, collection move/filter, no-match search, Trash/restore/open, text-only/shape/fallback preview; two-board bulk move, Copy link, collection-rename cancel, and 720px selected/menu layout | Larger library and multi-browser behavior unverified |
 | Diagram insertion/retry | Fixed in focused proof | Actual tldraw fixture and local API; placement, bindings, early ack, retry, undo/page guards | No live model call; latest shell not covered by fixture |
 | Custom colors | Fixed within supported types | Live picker/Text-tool flow, second client, reload; geometry Stroke/Background preset, custom, transparent, reload, SVG and PNG checks | Notes/frames/highlights/media and label colors remain outside the implementation |
-| New diagram controls | Named browser flows pass | Connected-node direct label typing/reload; Flowchart auto-layout and panel-clear fit; polished Sequence insertion/reload with 21 native shapes; personal-block save/reload/reinsert | 41 focused diagram tests pass; Safari hidden-tab automation cannot prove writes while animation frames are suspended (F15) |
-| Slides | Light/dark first slides captured; laser gesture acceptance pending | Earlier reorder/undo/reload/fullscreen checks passed; the stage mounts above tldraw UI, retries first-slide export and exposes loading/error UI. Isolated Helium captures show light and dark first slides with right-aligned controls; 26 focused presentation tests pass. | The laser trail has a focused one-pixel motion test, but live gesture/transition appearance still lacks saved visual proof. No live audience sharing claim. |
+| New diagram controls | Named browser flows pass | Connected-node direct label typing/reload; Flowchart/tree Arrange; Safari five-node Radial/Compact retained bound arrows and fitted below toolbar. Compact Yes/No captions separated after lane-gap correction. Layout subset 17/17. | Large-board performance and broader graph/viewport visual acceptance remain open; Safari hidden-tab automation cannot prove writes while animation frames are suspended (F15). |
+| Slides | Light/dark first slides captured; laser gesture acceptance pending | Earlier reorder/undo/reload/fullscreen checks passed; the stage mounts above tldraw UI, retries first-slide export and exposes loading/error UI. Isolated Helium captures show light and dark first slides with right-aligned controls; a slow-motion trail test brings the stage subset to 6/6. | Live gesture/transition appearance still lacks saved visual proof. No live audience sharing claim. |
 | Local sign-in | Isolated owner flow passes | Registration, sign-in, sign-out, board/asset/socket authorization and a two-tab sign-out gate passed; the existing live workspace shows first-run setup | High for isolated local paths; live owner setup must be completed by its owner, and internet deployment was not tested |
 | Footer license notice | Fixed in visible desktop sample | Helium footer capture shows the full tldraw production notice separated from its help mark, and accessibility exposes its button | High for checked desktop width; narrower widths still need visual proof |
 | Board files | Browser matrix and new `.tldr` round trip pass | Earlier native `.json`/`.tldr` new-room imports, two pages, embedded PNG, reload, page/selection PNG/SVG, opacity and draw-font SVG; new `.tldr` download/import/reload retained three labeled shapes | New pass sampled one 3-shape board; larger files, external linked media and other fonts remain unverified |
 | Excalidraw import | Bounded fixture passes | Three elements ready, one image skipped, imported board reload; an earlier fixture also parsed a three-element/one-binding export | Current Files UI has no Excalidraw export control; unsupported elements/styles remain omissions |
 | Board deep links | Fixed in focused proof | Direct HTTP GET/HEAD board route now 200 HTML; disposable-board browser hard reload retained title/canvas/tools | Unknown API/MCP/assets/mutations stay 404 in the checked matrix |
-| AI chat and gateway | Mock-provider browser path passes; pending-draft fix has focused test | Load models chose `freeform-proof`; Ask answered, Draw previewed a validated diagram, Add inserted three native shapes retained after reload. A model regression now preserves text typed while a request is in flight; Worker tests distinguish timeout/rate-limit/interrupted responses. | Actual Ollama/LM Studio and hosted-provider inference remain unverified; one provider fixture and board were sampled |
-| Developer diagram paths | Bounded browser and test paths pass | Four recognized Mermaid/SQL/OpenAPI/arrow-chain paste previews, plus a reviewed native Markdown card inserted/reloaded in Safari; focused paste tests cover source preservation and native round trip | Broad clipboard formats, code/JSON/URL browser acceptance, large inputs and constrained viewports remain unverified |
+| AI chat and gateway | Mock-provider browser path passes; Stop propagation has focused tests | Load models chose `freeform-proof`; Ask answered, Draw previewed a validated diagram, Add inserted three native shapes retained after reload. A model regression preserves newer typing; 13 gateway tests cover provider failures and Stop aborting upstream calls/response bodies. | Actual Ollama/LM Studio, hosted-provider inference and live-provider Stop remain unverified; one provider fixture and board were sampled |
+| Developer diagram paths | Bounded browser and test paths pass | Four recognized Mermaid/SQL/OpenAPI/arrow-chain paste previews and a reviewed native Markdown card inserted/reloaded in Safari. SQL's 11 parser tests now reject unrepresentable constraints and preserve composite primary-key order. | The new SQL rejection cases have test proof only; broad clipboard formats, code/JSON/URL browser acceptance, large inputs and constrained viewports remain unverified. |
 | Imported diagram arrows | Fixed in sampled Safari flow | Plain arrows now delegate to tldraw's native binding/label renderer. Safari inserted and arranged an API stack, moved its Service node with three bound arrows, then hard reloaded; endpoints and readable label gaps persisted. The focused Editor test covers a snapshot round trip too. A fresh Safari starter after spacing changes showed HTTP, Query and Job labels clear of strokes and arrowheads. | One starter and one moved node were sampled; broader labels, curves and dense boards remain unmeasured. |
 | Blue application accent | Sign-in and dashboard Safari views pass | The account screen shows a blue primary button/focus treatment; the signed-in dashboard has blue navigation selection and Start drawing, and the editor shell has blue selection. | The light presentation stage was visible in Helium; active laser blue still lacks a saved capture. Canvas palette intentionally includes violet drawing swatches. |
 | Storage consolidation | Owner catalog implemented; unified DB open | Catalog/collections now sync to the authenticated owner's SQLite-backed Durable Object, with localStorage fallback. Isolated Worker restart and merge tests preserve board IDs/Trash; rooms, assets, thumbnails and personal blocks retain separate stores. | Multi-browser catalog UI and all-data migration remain unverified; an unsynced local change can still be lost with its browser profile. |
 
 ## Issues and follow-ups
+
+### B25 — Compact Arrange crowded branch captions
+
+- [x] **Keep parallel Yes/No arrow labels legible after Compact Arrange.**
+- **Observed:** on a disposable five-node Safari flow, Compact kept native arrows attached but the Yes/No captions initially crowded each other.
+- **Fix and proof:** the compact secondary lane gap increased from 40 to 72. A focused regression requires at least 64 units between parallel branch boxes; Safari rechecked the five-node flow and saw separate captions. Radial and Compact also kept the graph under the top toolbar.
+- **Limit:** one small branch graph was sampled; dense or long labels remain unmeasured.
+
+### B24 — Reapplying Arrange left an unchanged diagram offscreen
+
+- [x] **Fit selected nodes back into view even when their geometry already matches the chosen layout.**
+- **Observed risk:** a no-op layout returned before the camera fit, so a user who had panned away could trigger Arrange with no visible result.
+- **Fix and proof:** the action still returns `false` for unchanged geometry and adds no shape-history edit, but now computes the fit. The regression failed first, then passed; the layout subset passes 17/17.
+- **Limit:** camera-fit behavior has a focused Editor test; the exact panned-away repeat was not separately browser-tested.
+
+### B26 — SQL import could silently omit constraints it cannot draw
+
+- [x] **Reject unsupported SQL relationships and preserve composite primary-key order.**
+- **Observed risk:** representational gaps could turn pasted `CREATE TABLE` source into an apparently complete ERD while dropping referential actions or pointing foreign keys at a non-primary target.
+- **Fix and proof:** the parser now reports unsupported CHECK/UNIQUE, referential actions, ambiguous or conflicting primary-key clauses, and non-primary foreign targets; implicit composite references follow declared key order. Focused SQL parser tests pass 11/11.
+- **Limit:** the newest rejection cases were verified in parser tests, not with a separate Safari import screenshot. The importer remains a bounded SQL subset.
 
 ### B20 — AI reply could erase a newer unsent draft
 
@@ -35,6 +56,20 @@ Updated 2026-09-25. Scope: this repository. Features and future ideas are tracke
 - **Observed risk:** the success path cleared the prompt unconditionally, so a user who typed the next instruction while waiting would lose it.
 - **Fix and proof:** capture the submitted prompt, append that prompt to history, and clear the input only if it is still unchanged when the reply arrives. A focused model test covers unchanged, newer, and whitespace-preserving cases. Worker tests cover timeout, rate limit, and interrupted provider responses with distinct errors.
 - **Limit:** this draft race was verified by a focused test, not a live provider UI pass. Real provider inference remains unverified.
+
+### B22 — AI Stop could leave a provider response body running
+
+- [x] **Cancel the upstream response body when Stop arrives after provider headers.**
+- **Observed risk:** aborting the request signal alone could leave a pending body read alive after the user stopped chat.
+- **Fix and proof:** the gateway's bounded stream reader listens for abort and cancels the provider body, including an abort in the initial response-body race. Thirteen focused gateway tests cover upstream abort, pending body cancellation and post-headers abort.
+- **Limit:** this checks the gateway against controlled provider streams; a real Ollama/LM Studio or hosted Stop interaction is still unverified.
+
+### B23 — Board title was squeezed at tablet width
+
+- [x] **Use available title width without colliding with page or utility controls.**
+- **Observed:** a fixed 95px title cap truncated the board name even when the 720px header had more room.
+- **Fix and proof:** responsive `clamp()` widths apply to both display and rename input. Safari captures at 720px show the full `Untitled board` title; at 390px the name intentionally ellipsizes while Page 1 and the utility icons stay separate (`.evidence/postplan-partial-proof/chrome-720-safari.png`, `chrome-390-safari.png`).
+- **Limit:** two sampled widths and an empty board; longer names and open menus were not visually exercised.
 
 ### B19 — Inline Markdown emphasis overlapped in a pasted canvas card
 
