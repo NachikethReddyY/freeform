@@ -111,7 +111,7 @@ type PresentationListener = () => void
 export class PresentationController {
 	private frames: TLFrameShape[] = []
 	private index = -1
-	private lastFrameId: TLShapeId | null = null
+	private readonly traversedFrameIds = new Set<TLShapeId>()
 	private originalCamera: ReturnType<Editor['getCamera']> | null = null
 	private originalSelection: TLShapeId[] | null = null
 	private originalReadonly: boolean | null = null
@@ -137,8 +137,8 @@ export class PresentationController {
 		return this.frames[this.index]
 	}
 
-	get previousFrameId() {
-		return this.lastFrameId
+	get transitionFrameIds() {
+		return [...this.traversedFrameIds]
 	}
 
 	subscribe(listener: PresentationListener) {
@@ -153,7 +153,7 @@ export class PresentationController {
 
 		this.frames = frames
 		this.index = 0
-		this.lastFrameId = null
+		this.traversedFrameIds.clear()
 		this.originalCamera = { ...this.editor.getCamera() }
 		this.originalSelection = [...this.editor.getSelectedShapeIds()]
 		this.originalReadonly = this.editor.getInstanceState().isReadonly
@@ -225,7 +225,7 @@ export class PresentationController {
 		this.originalReadonly = null
 		this.frames = []
 		this.index = -1
-		this.lastFrameId = null
+		this.traversedFrameIds.clear()
 		this.emit()
 		return true
 	}
@@ -246,12 +246,12 @@ export class PresentationController {
 		if (!this.isPresenting || nextIndex < 0 || nextIndex >= this.frames.length) return false
 		if (nextIndex === this.index) return true
 		if (this.transitionTimer) clearTimeout(this.transitionTimer)
-		this.lastFrameId = this.currentFrame?.id ?? null
+		if (this.currentFrame) this.traversedFrameIds.add(this.currentFrame.id)
 		this.index = nextIndex
 		this.showCurrentFrame()
 		this.emit()
 		this.transitionTimer = setTimeout(() => {
-			this.lastFrameId = null
+			this.traversedFrameIds.clear()
 			this.transitionTimer = null
 			this.emit()
 		}, 480)
@@ -371,7 +371,7 @@ export function PresentationControls({ editor }: PresentationControlsProps) {
 		editor={editor}
 		frames={getPresentationFrames(editor)}
 		index={presentation.currentIndex}
-		previousFrameId={presentation.previousFrameId}
+		transitionFrameIds={presentation.transitionFrameIds}
 		onPrevious={() => presentation.previous()}
 		onNext={() => presentation.next()}
 		onEnterFullscreen={() => presentation.enterFullscreen()}

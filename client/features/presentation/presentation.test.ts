@@ -327,6 +327,39 @@ test('presentation navigates frames, fits camera, and restores camera and select
 	assert.equal(container.dataset.freeformPresentation, undefined)
 })
 
+test('rapid slide navigation retains every traversed frame until the camera settles', async () => {
+	const frames = [frame('frame:one', 0, 0), frame('frame:two', 700, 0), frame('frame:three', 1400, 0)]
+	const editor = {
+		getCurrentPageId: () => 'page:current',
+		getCurrentPageShapes: () => frames,
+		getCamera: () => ({ x: 0, y: 0, z: 1 }),
+		getSelectedShapeIds: () => [],
+		getInstanceState: () => ({ isReadonly: false }),
+		getShapePageBounds: (id: string) => {
+			const shape = frames.find((candidate) => candidate.id === id)
+			return shape ? { x: shape.x, y: shape.y, w: shape.props.w, h: shape.props.h } : undefined
+		},
+		getShape: (id: string) => frames.find((candidate) => candidate.id === id),
+		setSelectedShapes: () => {},
+		setCamera: () => {},
+		updateInstanceState: () => {},
+		zoomToBounds: () => {},
+		getContainer: () => ({ dataset: {}, ownerDocument: { fullscreenElement: null } }),
+	} as unknown as Editor
+	const presentation = new PresentationController(editor)
+	try {
+		assert.equal(presentation.start(), true)
+		assert.deepEqual(presentation.transitionFrameIds, [])
+		assert.equal(presentation.next(), true)
+		assert.equal(presentation.next(), true)
+		assert.deepEqual(presentation.transitionFrameIds, [frames[0].id, frames[1].id], 'the first slide remains visible during the second move')
+		await new Promise((resolve) => setTimeout(resolve, 500))
+		assert.deepEqual(presentation.transitionFrameIds, [], 'old slides are removed after the camera animation')
+	} finally {
+		presentation.dispose()
+	}
+})
+
 test('keyboard navigation handles arrow/page keys and Escape only while presenting', () => {
 	const editor = {
 		getCurrentPageId: () => 'page:current',

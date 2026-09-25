@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import type { Editor, TLFrameShape, TLShapeId } from 'tldraw'
-import { getPresentationCamera, exportPresentationSlide, exportPresentationSlideWithRetry, getLaserSegment, advanceLaserTrail } from './presentationStage'
+import { getPresentationCamera, exportPresentationSlide, exportPresentationSlideWithRetry, getLaserSegment, advanceLaserTrail, getVisiblePresentationFrames } from './presentationStage'
+
+test('the stage keeps both traversed slides mounted during a rapid spatial move', () => {
+	const frames = ['shape:first', 'shape:second', 'shape:third'].map((id) => ({ id, type: 'frame' }) as TLFrameShape)
+	assert.deepEqual(getVisiblePresentationFrames(frames, 2, [frames[0].id, frames[1].id]).map((frame) => frame.id), frames.map((frame) => frame.id))
+	assert.deepEqual(getVisiblePresentationFrames(frames, 2, []).map((frame) => frame.id), [frames[2].id])
+})
 
 test('a small frame expands into a centered slide without exposing nearby canvas', () => {
 	const camera = getPresentationCamera({ x: 200, y: 500, w: 320, h: 180 }, 1280, 720)

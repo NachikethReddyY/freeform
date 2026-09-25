@@ -86,14 +86,18 @@ export interface PresentationStageProps {
 	editor: Editor
 	frames: readonly TLFrameShape[]
 	index: number
-	previousFrameId: TLShapeId | null
+	transitionFrameIds: readonly TLShapeId[]
 	onPrevious(): void
 	onNext(): void
 	onEnterFullscreen(): void | Promise<boolean>
 	onExit(): void
 }
 
-export function PresentationStage({ editor, frames, index, previousFrameId, onPrevious, onNext, onEnterFullscreen, onExit }: PresentationStageProps) {
+export function getVisiblePresentationFrames(frames: readonly TLFrameShape[], index: number, transitionFrameIds: readonly TLShapeId[]) {
+	return frames.filter((frame) => frame.id === frames[index]?.id || transitionFrameIds.includes(frame.id))
+}
+
+export function PresentationStage({ editor, frames, index, transitionFrameIds, onPrevious, onNext, onEnterFullscreen, onExit }: PresentationStageProps) {
 	const surfaceRef = useRef<HTMLDivElement>(null)
 	const remoteHost = useRef<ReturnType<typeof createPresentationRemoteHost> | null>(null)
 	const remoteState = useRef<PresentationRemoteState>({ presenting: true, index, count: frames.length, title: '', laserActive: false })
@@ -115,7 +119,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 	const [pulse, setPulse] = useState<LaserPoint | null>(null)
 	const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null)
 	const active = frames[index]
-	const visible = frames.filter((frame) => frame.id === active?.id || frame.id === previousFrameId)
+	const visible = getVisiblePresentationFrames(frames, index, transitionFrameIds)
 	const position = index + 1
 	const title = active?.props.name.trim() || `Slide ${position}`
 	remoteState.current = { presenting: true, index, count: frames.length, title, laserActive }
@@ -178,7 +182,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 
 	useEffect(() => {
 		// Preload neighbors so moving to the next frame normally has no empty state.
-		const needed = [frames[index - 1], frames[index], frames[index + 1], frames.find((frame) => frame.id === previousFrameId)]
+		const needed = [frames[index - 1], frames[index], frames[index + 1], ...visible]
 		for (const frame of needed) {
 			if (!frame) continue
 			const key = `${frame.id}:${darkMode ? 'dark' : 'light'}`
@@ -205,7 +209,7 @@ export function PresentationStage({ editor, frames, index, previousFrameId, onPr
 				if (mounted.current) setFailedExports((current) => new Set(current).add(key))
 			})
 		}
-	}, [editor, frames, index, previousFrameId, darkMode, revision])
+	}, [editor, frames, index, transitionFrameIds, darkMode, revision])
 
 	useEffect(() => {
 		mounted.current = true
