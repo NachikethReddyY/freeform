@@ -69,8 +69,8 @@
 }
 
 .freeform-presentation-stage__laser-trail { animation: freeform-laser-fade 460ms ease-out forwards; }
-.freeform-presentation-stage__laser-trail-glow { stroke: #4c99f4; stroke-width: 12; stroke-linecap: round; opacity: .55; filter: blur(6px); }
-.freeform-presentation-stage__laser-trail-core { stroke: #f9fbff; stroke-width: 3.5; stroke-linecap: round; filter: drop-shadow(0 0 2px #1680e8); }
+.freeform-presentation-stage__laser-trail-glow { stroke: #4c99f4; stroke-width: 10; stroke-linecap: round; opacity: .65; filter: blur(4px); }
+.freeform-presentation-stage__laser-trail-core { stroke: #2584db; stroke-width: 2.8; stroke-linecap: round; filter: drop-shadow(0 0 2px #1680e8); }
 .freeform-presentation-stage__laser-glow { fill: #69aff8; opacity: .48; filter: blur(7px); }
 .freeform-presentation-stage__laser-dot { fill: #fff; stroke: #2584db; stroke-width: 2; filter: drop-shadow(0 0 4px #4c99f4); }
 .freeform-presentation-stage__laser-pulse { fill: none; stroke: #82bfff; stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: freeform-laser-pulse 420ms ease-out forwards; }
