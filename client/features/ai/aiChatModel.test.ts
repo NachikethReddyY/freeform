@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildChatMessages, parseAiReply } from './aiChatModel'
+import { buildChatMessages, draftAfterSuccessfulReply, parseAiReply } from './aiChatModel'
 
 test('chat history is bounded and board context remains data in the user turn', () => {
 	const previous = Array.from({ length: 16 }, (_, index) => ({ role: index % 2 ? 'assistant' as const : 'user' as const, content: `Turn ${index}` }))
@@ -31,4 +31,10 @@ test('invalid diagrams cannot reach the insertion control', () => {
 	const reply = parseAiReply({ model: 'local', message: 'Draft', diagram: { title: 'Bad', nodes: [], edges: [{ id: 'x' }] } })
 	assert.equal(reply.diagram, undefined)
 	assert.match(reply.warning ?? '', /invalid diagram/i)
+})
+
+test('a successful reply clears only the submitted draft, preserving newer typing', () => {
+	assert.equal(draftAfterSuccessfulReply('Draw an API', 'Draw an API'), '')
+	assert.equal(draftAfterSuccessfulReply('Add a database too', 'Draw an API'), 'Add a database too')
+	assert.equal(draftAfterSuccessfulReply('  Draw an API  ', '  Draw an API  '), '')
 })

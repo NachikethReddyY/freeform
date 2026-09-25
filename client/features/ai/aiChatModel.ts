@@ -9,6 +9,11 @@ export interface AiReply {
 	warning?: string
 }
 
+/** Keep anything typed while the submitted message is in flight. */
+export function draftAfterSuccessfulReply(currentDraft: string, submittedDraft: string): string {
+	return currentDraft === submittedDraft ? '' : currentDraft
+}
+
 const ResponseSchema = z.object({ model: z.string(), message: z.string(), diagram: z.unknown().optional(), warning: z.string().optional() }).passthrough()
 
 /** Keep the prompt and board data together so canvas text cannot become a system instruction. */

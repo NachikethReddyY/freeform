@@ -132,3 +132,18 @@ test('rejects cross-origin calls, invalid bodies, upstream redirects and oversiz
 	assert.equal((await handleAiModels(jsonRequest('/api/ai/models', modelConnection), async () => new Response('oops'))).status, 502)
 	assert.deepEqual(await (await handleAiModels(jsonRequest('/api/ai/models', modelConnection), async () => new Response(null, { status: 401 }))).json(), { error: 'Model provider rejected the API key' })
 })
+
+test('provider failures distinguish timeout, rate limits, and interrupted responses', async () => {
+	const request = () => jsonRequest('/api/ai/chat', { ...modelConnection, model: 'model-a', messages: [{ role: 'user', content: 'hello' }] })
+	const timeout = await handleAiChat(request(), async () => { throw new DOMException('Timed out', 'TimeoutError') })
+	assert.equal(timeout.status, 504)
+	assert.deepEqual(await timeout.json(), { error: 'Model provider timed out' })
+	const rateLimit = await handleAiChat(request(), async () => new Response(null, { status: 429 }))
+	assert.equal(rateLimit.status, 429)
+	assert.deepEqual(await rateLimit.json(), { error: 'Model provider rate limit reached' })
+	const interrupted = await handleAiChat(request(), async () => new Response(new ReadableStream({
+		start(controller) { controller.error(new Error('connection reset')) },
+	})))
+	assert.equal(interrupted.status, 502)
+	assert.deepEqual(await interrupted.json(), { error: 'Model provider response was interrupted' })
+})

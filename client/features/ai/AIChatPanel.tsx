@@ -4,7 +4,7 @@ import { renderPlaintextFromRichText, useEditor, useValue, type Editor, type TLP
 import type { Diagram } from '../../../shared/diagram'
 import { DiagramPreview } from '../diagrams/DiagramPreview'
 import { applyNativeDiagram } from '../diagrams/native'
-import { buildChatMessages, parseAiReply, type AiMessage } from './aiChatModel'
+import { buildChatMessages, draftAfterSuccessfulReply, parseAiReply, type AiMessage } from './aiChatModel'
 import './aiChat.css'
 
 type Provider = 'ollama' | 'openai-compatible'
@@ -97,17 +97,18 @@ export function AIChatPanel() {
 	const send = async () => {
 		if (busy) return
 		if (!settings.model.trim()) { setSettingsOpen(true); setError('Choose or enter a model first.'); return }
+		const submittedPrompt = prompt
 		const pageId = editor.getCurrentPageId()
 		const boardContext = includeBoard ? compactPageContext(editor, editor.getCurrentPageShapes(), editor.getCurrentPage().name) : undefined
 		let messages: AiMessage[]
-		try { messages = buildChatMessages(turns.map(({ role, content }) => ({ role, content })), prompt, boardContext) }
+		try { messages = buildChatMessages(turns.map(({ role, content }) => ({ role, content })), submittedPrompt, boardContext) }
 		catch (cause) { setError(cause instanceof Error ? cause.message : 'Enter a message.'); return }
 		const task = new AbortController(); controller.current = task; setBusy('message'); setError(''); setNotice('')
 		try {
 			const reply = parseAiReply(await postAi('/api/ai/chat', { ...connection, model: settings.model.trim(), messages, mode }, task.signal))
 			if (task.signal.aborted) return
-			setTurns((previous) => [...previous, { role: 'user', content: prompt.trim() }, { role: 'assistant', content: reply.content, diagram: reply.diagram, pageId, warning: reply.warning }])
-			setPrompt('')
+			setTurns((previous) => [...previous, { role: 'user', content: submittedPrompt.trim() }, { role: 'assistant', content: reply.content, diagram: reply.diagram, pageId, warning: reply.warning }])
+			setPrompt((current) => draftAfterSuccessfulReply(current, submittedPrompt))
 		} catch (cause) { if (!task.signal.aborted) setError(cause instanceof Error ? cause.message : 'AI request failed. Retry with your message preserved.') }
 		finally { if (controller.current === task) { controller.current = null; setBusy(null) } }
 	}
