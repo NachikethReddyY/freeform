@@ -20,9 +20,16 @@ test('arrange diagram is searchable only when a diagram can be laid out', () => 
 	const unavailable = availableCommandDefinitions(false)
 	const available = availableCommandDefinitions(true)
 	assert.equal(filterCommands(unavailable, 'auto layout').length, 0)
-	assert.deepEqual(filterCommands(available, 'auto layout').map((command) => command.id), ['arrange-diagram'])
-	assert.equal(unavailable.length + 1, available.length)
-	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => command.id !== 'arrange-diagram').map((command) => command.id))
+	assert.deepEqual(filterCommands(available, 'auto layout').map((command) => command.id), ['arrange-diagram', 'arrange-vertical'])
+	assert.equal(unavailable.length + 2, available.length)
+	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => !['arrange-diagram', 'arrange-vertical'].includes(command.id)).map((command) => command.id))
+})
+
+test('vertical and tree arrangement follow selection eligibility', () => {
+	assert.equal(filterCommands(availableCommandDefinitions(false), 'arrange vertical').length, 0)
+	assert.deepEqual(filterCommands(availableCommandDefinitions(true, false, false, false), 'arrange vertical').map((command) => command.id), ['arrange-vertical'])
+	assert.equal(filterCommands(availableCommandDefinitions(true, false, false, false), 'arrange tree').length, 0)
+	assert.deepEqual(filterCommands(availableCommandDefinitions(true, false, false, true), 'arrange tree').map((command) => command.id), ['arrange-tree'])
 })
 
 test('connected node directions appear only for an eligible selected node', () => {
@@ -34,6 +41,12 @@ test('connected node directions appear only for an eligible selected node', () =
 	])
 	assert.deepEqual(filterCommands(connected, 'connect below').map((command) => command.id), ['connect-down'])
 	assert.equal(connected.length, disconnected.length + 4)
+})
+
+test('create node can start a keyboard-only diagram on an editable board', () => {
+	assert.equal(filterCommands(availableCommandDefinitions(false, false, false), 'create node').length, 0)
+	assert.ok(filterCommands(availableCommandDefinitions(false, false, true), 'create node').some((command) => command.id === 'create-node'))
+	assert.deepEqual(filterCommands(availableCommandDefinitions(false, false, true), 'create database').map((command) => command.id), ['create-database'])
 })
 
 test('keyboard selection wraps and the palette chord preserves native K and modified K', () => {

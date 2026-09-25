@@ -5,6 +5,8 @@ import {
 	saveSelectionAsBlock, type StorageLike,
 } from './library'
 import type { StarterId } from './templates'
+import { TECHNICAL_NODES, createStandaloneNode } from '../technicalNodes'
+import { exportSelectedDiagramAsMermaid } from '../mermaidExport'
 import './library.css'
 
 const STARTER_ITEMS: { id: StarterId; label: string; icon: React.ReactNode }[] = [
@@ -32,20 +34,45 @@ function PlusIcon() { return <Icon><path d="M11 4v14M4 11h14" /></Icon> }
 function SaveIcon() { return <Icon><path d="M4 3h12l3 3v13H3V3h1m3 0v6h8V3M7 19v-7h8v7" /></Icon> }
 function TrashIcon() { return <Icon><path d="M4 6h14m-2 0-.7 13H6.7L6 6m3-3h4l1 3M9 9v7m4-7v7" /></Icon> }
 function BlocksIcon() { return <Icon><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="13" y="2" width="7" height="7" rx="1"/><rect x="2" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/></Icon> }
+function CodeIcon() { return <Icon><path d="m8 6-5 5 5 5m6-10 5 5-5 5m-1-12-4 14" /></Icon> }
+function TechnicalIcon({ kind }: { kind: typeof TECHNICAL_NODES[number]['kind'] }) {
+	switch (kind) {
+	case 'api': return <Icon><rect x="2" y="4" width="18" height="14" rx="2"/><path d="M2 8h18M6 6h.01M9 6h.01m-2 7h8"/></Icon>
+	case 'database': return <Icon><ellipse cx="11" cy="5" rx="8" ry="3"/><path d="M3 5v11c0 4 16 4 16 0V5M3 11c0 4 16 4 16 0"/></Icon>
+	case 'service': return <Icon><rect x="2" y="3" width="18" height="16" rx="2"/><path d="M6 7h10M6 11h10M6 15h7"/></Icon>
+	case 'queue': return <Icon><rect x="2" y="3" width="6" height="4" rx="1"/><rect x="2" y="9" width="6" height="4" rx="1"/><rect x="2" y="15" width="6" height="4" rx="1"/><path d="M8 5h10m-10 6h10m-10 6h10"/></Icon>
+	case 'function': return <Icon><path d="m8 5-5 6 5 6m6-12 5 6-5 6M13 3l-4 16"/></Icon>
+	case 'cloud': return <Icon><path d="M6 17h11a4 4 0 0 0 .2-8A6 6 0 0 0 6 9a4 4 0 0 0 0 8Z"/></Icon>
+	}
+}
 
 export function DiagramLibrarySection({ editor, storage = localStorage }: { editor: Editor; storage?: StorageLike }) {
 	const [blocks, setBlocks] = useState(() => loadPersonalBlocks(storage))
 	const [naming, setNaming] = useState(false)
 	const [name, setName] = useState('')
 	const [error, setError] = useState('')
+	const [feedback, setFeedback] = useState('')
 	const [armedDeleteId, setArmedDeleteId] = useState<string | null>(null)
 	const { selection, readonly } = useValue('diagram library availability', () => ({
 		selection: editor.getSelectedShapeIds().length, readonly: editor.getIsReadonly(),
 	}), [editor])
 
 	const act = (task: () => void) => {
-		try { task(); setError('') }
+		try { task(); setError(''); setFeedback('') }
 		catch (cause) { setError(cause instanceof Error ? cause.message : 'Library action failed.') }
+	}
+	const copyMermaid = async () => {
+		try {
+			const result = exportSelectedDiagramAsMermaid(editor)
+			await navigator.clipboard.writeText(result.source)
+			const { shapes, arrows, approximatedShapes, normalizedLabels } = result.omitted
+			const details = [
+				shapes && `${shapes} shapes omitted`, arrows && `${arrows} arrows omitted`,
+				approximatedShapes && `${approximatedShapes} shapes simplified`, normalizedLabels && `${normalizedLabels} labels normalized`,
+			].filter(Boolean).join(', ')
+			setFeedback(`Copied ${result.included.nodes} nodes and ${result.included.arrows} arrows${details ? ` · ${details}` : ''}.`)
+			setError('')
+		} catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not copy Mermaid.'); setFeedback('') }
 	}
 
 	const save = () => act(() => {
@@ -61,6 +88,17 @@ export function DiagramLibrarySection({ editor, storage = localStorage }: { edit
 				aria-label={`Insert ${starterNames[id]} starter`}
 				onClick={() => act(() => { insertStarter(editor, id) })}>
 				<Icon>{icon}</Icon><span>{label}</span>
+			</button>)}
+		</div>
+		<div className="freeform-diagram-library-heading freeform-diagram-library-heading--nodes">
+			<span>Nodes</span>
+			<button type="button" className="freeform-diagram-icon-button" title="Copy selected diagram as Mermaid" aria-label="Copy selected diagram as Mermaid"
+				disabled={selection === 0} onClick={() => { void copyMermaid() }}><CodeIcon /></button>
+		</div>
+		<div className="freeform-diagram-nodes">
+			{TECHNICAL_NODES.map(({ kind, title }) => <button key={kind} type="button" disabled={readonly}
+				aria-label={`Add ${title} node`} title={`Add ${title} node`} onClick={() => act(() => { createStandaloneNode(editor, kind) })}>
+				<TechnicalIcon kind={kind} />
 			</button>)}
 		</div>
 		<div className="freeform-diagram-library-heading freeform-diagram-library-heading--blocks">
@@ -88,5 +126,6 @@ export function DiagramLibrarySection({ editor, storage = localStorage }: { edit
 			</div>)}
 		</div>}
 		{error && <p className="freeform-diagram-library-error" role="alert">{error}</p>}
+		{feedback && <p className="freeform-diagram-library-feedback" role="status">{feedback}</p>}
 	</div>
 }

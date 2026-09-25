@@ -20,15 +20,26 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'zoom-to-selection', kind: 'action', label: 'Zoom to selection', keywords: 'selected shapes' },
 	{ id: 'zoom-to-100', kind: 'action', label: 'Reset zoom', keywords: '100 percent actual size' },
 	{ id: 'arrange-diagram', kind: 'custom', label: 'Arrange diagram', keywords: 'auto layout flowchart connected nodes' },
+	{ id: 'arrange-vertical', kind: 'custom', label: 'Arrange vertical', keywords: 'auto layout top bottom diagram' },
+	{ id: 'arrange-tree', kind: 'custom', label: 'Arrange tree', keywords: 'auto layout branches hierarchy diagram' },
+	{ id: 'create-node', kind: 'custom', label: 'Create node', keywords: 'create node rectangle box diagram keyboard' },
+	{ id: 'create-api', kind: 'custom', label: 'Create API', keywords: 'create api endpoint developer node' },
+	{ id: 'create-database', kind: 'custom', label: 'Create database', keywords: 'create database sql data node' },
+	{ id: 'create-service', kind: 'custom', label: 'Create service', keywords: 'create service server node' },
+	{ id: 'create-queue', kind: 'custom', label: 'Create queue', keywords: 'create queue jobs events node' },
+	{ id: 'create-function', kind: 'custom', label: 'Create function', keywords: 'create function code node' },
+	{ id: 'create-cloud', kind: 'custom', label: 'Create cloud', keywords: 'create cloud provider node' },
 	{ id: 'connect-up', kind: 'custom', label: 'Connect node above', keywords: 'connect node above up diagram' },
 	{ id: 'connect-right', kind: 'custom', label: 'Connect node right', keywords: 'connect node right diagram' },
 	{ id: 'connect-down', kind: 'custom', label: 'Connect node below', keywords: 'connect node below down diagram' },
 	{ id: 'connect-left', kind: 'custom', label: 'Connect node left', keywords: 'connect node left diagram' },
 ]
 
-export function availableCommandDefinitions(canArrangeDiagram: boolean, canConnectNode = false): CommandDefinition[] {
+export function availableCommandDefinitions(canArrangeDiagram: boolean, canConnectNode = false, canCreateNode = false, canArrangeTree = false): CommandDefinition[] {
 	return commandDefinitions.filter((definition) => {
-		if (definition.id === 'arrange-diagram') return canArrangeDiagram
+		if (definition.id === 'arrange-diagram' || definition.id === 'arrange-vertical') return canArrangeDiagram
+		if (definition.id === 'arrange-tree') return canArrangeTree
+		if (definition.id.startsWith('create-')) return canCreateNode
 		if (definition.id.startsWith('connect-')) return canConnectNode
 		return true
 	})

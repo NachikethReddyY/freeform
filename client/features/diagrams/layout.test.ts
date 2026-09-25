@@ -261,3 +261,77 @@ test('a longer arrangement fits all selected nodes into the viewport', () => {
 		}
 	} finally { editor.dispose() }
 })
+
+test('vertical layout follows dependency order, preserves bindings, and is one undo step', () => {
+	const editor = new TestEditor()
+	try {
+		const root = node(editor, 'API', 420, 340, 210, 90)
+		const left = node(editor, 'Queue', 30, 40, 160, 120)
+		const right = node(editor, 'Database', 100, 480, 190, 90)
+		const a = connect(editor, root, left)
+		const b = connect(editor, root, right)
+		const before = [root, left, right].map((id) => editor.getShape(id))
+		const bindings = [...a.bindingIds, ...b.bindingIds].map((id) => editor.getBinding(id))
+		editor.select(root, left, right)
+		assert.equal(canLayoutSelectedDiagram(editor, 'vertical'), true)
+		assert.equal(layoutSelectedDiagram(editor, 'vertical'), true)
+		const parent = editor.getShapePageBounds(root)!
+		const first = editor.getShapePageBounds(left)!
+		const second = editor.getShapePageBounds(right)!
+		assert.ok(first.y >= parent.maxY + 48 && second.y >= parent.maxY + 48)
+		assert.equal(first.y, second.y)
+		assert.ok(first.maxX + 32 <= second.x || second.maxX + 32 <= first.x)
+		assert.deepEqual([...a.bindingIds, ...b.bindingIds].map((id) => editor.getBinding(id)), bindings)
+		const after = [root, left, right].map((id) => editor.getShape(id))
+		editor.undo()
+		assert.deepEqual([root, left, right].map((id) => editor.getShape(id)), before)
+		editor.redo()
+		assert.deepEqual([root, left, right].map((id) => editor.getShape(id)), after)
+	} finally { editor.dispose() }
+})
+
+test('tree layout centers each parent over descendants without subtree overlap', () => {
+	const editor = new TestEditor()
+	try {
+		const root = node(editor, 'Root', 300, 300, 210, 90)
+		const branch = node(editor, 'Branch', 0, 0, 240, 110)
+		const sibling = node(editor, 'Sibling', 100, 400, 150, 90)
+		const leafA = node(editor, 'A', -100, 600, 170, 80)
+		const leafB = node(editor, 'B', 800, 100, 220, 100)
+		connect(editor, root, branch); connect(editor, root, sibling)
+		connect(editor, branch, leafA); connect(editor, branch, leafB)
+		editor.select(root, branch, sibling, leafA, leafB)
+		assert.equal(canLayoutSelectedDiagram(editor, 'tree'), true)
+		assert.equal(layoutSelectedDiagram(editor, 'tree'), true)
+		const box = (id: TLShapeId) => editor.getShapePageBounds(id)!
+		const centerX = (id: TLShapeId) => box(id).center.x
+		assert.ok(box(root).maxY < box(branch).y && box(branch).maxY < box(leafA).y)
+		assert.ok(box(root).maxY < box(sibling).y)
+		assert.ok(centerX(root) >= Math.min(centerX(branch), centerX(sibling)))
+		assert.ok(centerX(root) <= Math.max(centerX(branch), centerX(sibling)))
+		assert.ok(centerX(branch) >= Math.min(centerX(leafA), centerX(leafB)))
+		assert.ok(centerX(branch) <= Math.max(centerX(leafA), centerX(leafB)))
+		const boxes = [root, branch, sibling, leafA, leafB].map(box)
+		for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+			assert.ok(boxes[i].maxX <= boxes[j].x || boxes[j].maxX <= boxes[i].x
+				|| boxes[i].maxY <= boxes[j].y || boxes[j].maxY <= boxes[i].y,
+				'tree nodes must not overlap')
+		}
+		assert.equal(layoutSelectedDiagram(editor, 'tree'), false, 'repeating tree layout is a no-op')
+	} finally { editor.dispose() }
+})
+
+test('tree layout is unavailable for cycles and shared descendants without changing the diagram', () => {
+	const editor = new TestEditor()
+	try {
+		const a = node(editor, 'A', 100, 100)
+		const b = node(editor, 'B', 400, 100)
+		const c = node(editor, 'C', 700, 100)
+		connect(editor, a, b); connect(editor, b, c); connect(editor, a, c)
+		editor.select(a, b, c)
+		const before = [a, b, c].map((id) => editor.getShape(id))
+		assert.equal(canLayoutSelectedDiagram(editor, 'tree'), false)
+		assert.equal(layoutSelectedDiagram(editor, 'tree'), false)
+		assert.deepEqual([a, b, c].map((id) => editor.getShape(id)), before)
+	} finally { editor.dispose() }
+})

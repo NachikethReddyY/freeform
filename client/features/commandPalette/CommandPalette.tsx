@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { TldrawUiKbd, useActions, useEditor, useTools, useValue } from 'tldraw'
 import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../diagrams/layout'
 import { addConnectedNode, canAddConnectedNode, type ConnectedNodeDirection } from '../diagrams/connectedNode'
+import { createStandaloneNode, type TechnicalNodeKind } from '../diagrams/technicalNodes'
 import { availableCommandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex, type CommandDefinition } from './commands'
 import './commandPalette.css'
 
@@ -9,6 +10,10 @@ export interface CommandPaletteProps { open: boolean; onOpenChange: (open: boole
 type PaletteCommand = CommandDefinition & { onSelect: () => void | Promise<void>; kbd?: string }
 const connectedDirectionById: Record<string, ConnectedNodeDirection> = {
 	'connect-up': 'up', 'connect-right': 'right', 'connect-down': 'down', 'connect-left': 'left',
+}
+const technicalKindById: Record<string, TechnicalNodeKind> = {
+	'create-api': 'api', 'create-database': 'database', 'create-service': 'service',
+	'create-queue': 'queue', 'create-function': 'function', 'create-cloud': 'cloud',
 }
 
 /** Mount inside Tldraw to reuse its configured tool and action registries. */
@@ -23,15 +28,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const [query, setQuery] = useState('')
 	const [active, setActive] = useState(0)
 	const [error, setError] = useState('')
-	const { readonly, selected, canArrangeDiagram, canConnectNode } = useValue('palette availability', () => ({
+	const { readonly, selected, canArrangeDiagram, canArrangeTree, canConnectNode, canCreateNode } = useValue('palette availability', () => ({
 		readonly: editor.getIsReadonly(),
 		selected: editor.getSelectedShapeIds().length,
 		canArrangeDiagram: canLayoutSelectedDiagram(editor),
+		canArrangeTree: canLayoutSelectedDiagram(editor, 'tree'),
 		canConnectNode: canAddConnectedNode(editor),
+		canCreateNode: !editor.getIsReadonly() && editor.getCurrentPageShapeIds().size < editor.options.maxShapesPerPage,
 	}), [editor])
-	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram, canConnectNode).flatMap<PaletteCommand>((definition) => {
+	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram, canConnectNode, canCreateNode, canArrangeTree).flatMap<PaletteCommand>((definition) => {
 		if (definition.kind === 'custom') {
 			if (definition.id === 'arrange-diagram') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor) } }]
+			if (definition.id === 'arrange-vertical') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'vertical') } }]
+			if (definition.id === 'arrange-tree') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor, 'tree') } }]
+			if (definition.id === 'create-node') return [{ ...definition, onSelect: () => { createStandaloneNode(editor) } }]
+			const technicalKind = technicalKindById[definition.id]
+			if (technicalKind) return [{ ...definition, onSelect: () => { createStandaloneNode(editor, technicalKind) } }]
 			const direction = connectedDirectionById[definition.id]
 			if (!direction) return []
 			return [{ ...definition, onSelect: () => { addConnectedNode(editor, direction) } }]
@@ -39,7 +51,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 		const native = definition.kind === 'tool' ? tools[definition.id] : actions[definition.id]
 		if (!native || (readonly && !native.readonlyOk) || (definition.id === 'zoom-to-selection' && selected === 0)) return []
 		return [{ ...definition, onSelect: () => native.onSelect('dialog'), kbd: native.kbd }]
-	}), [actions, tools, editor, readonly, selected, canArrangeDiagram, canConnectNode])
+	}), [actions, tools, editor, readonly, selected, canArrangeDiagram, canArrangeTree, canConnectNode, canCreateNode])
 	const matches = filterCommands(commands, query)
 	const selectedIndex = Math.min(active, Math.max(0, matches.length - 1))
 
@@ -72,9 +84,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const choose = async (command: typeof commands[number]) => {
 		try {
 			// The label editor must receive focus after the modal releases it.
-			if (command.id in connectedDirectionById) {
+			if (command.id in connectedDirectionById || command.id === 'create-node' || command.id in technicalKindById) {
 				onOpenChange(false)
 				dialog.current?.close()
+				// Let the dialog's native focus restoration finish before the shape editor opens.
+				await new Promise<void>((resolve) => window.setTimeout(resolve, 0))
+				editor.focus()
 				await command.onSelect()
 				return
 			}

@@ -5,13 +5,15 @@ import { Children, createElement, isValidElement, type ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
 	Box, Editor, Group2d, Rectangle2d, createTLStore, defaultAddFontsFromNode,
-	defaultBindingUtils, defaultShapeTools, defaultShapeUtils, defaultTools,
+	defaultBindingUtils, defaultShapeTools, defaultShapeUtils, defaultTools, createShapeId, toRichText,
 	getArrowInfo, getSnapshot, loadSnapshot, tipTapDefaultExtensions,
 	type TLArrowShape,
 } from 'tldraw'
 import { DiagramSchema } from '../../../shared/diagram'
 import { FreeformArrowShapeUtil } from '../../editor/excalidrawShapes/FreeformArrowShapeUtil'
 import { applyNativeDiagram, createNativeDiagram } from './native'
+import { parseMermaidFlowchart } from './mermaid'
+import { exportSelectedDiagramAsMermaid } from './mermaidExport'
 
 for (const handle of (process as NodeJS.Process & { _getActiveHandles(): unknown[] })._getActiveHandles()) {
 	if (handle instanceof MessagePort) handle.unref()
@@ -138,4 +140,56 @@ test('imported native arrow stays bound, clears both node labels, and survives a
 		assert.ok(Math.abs(reloaded.end.x - moved.end.x) < 2)
 		assert.ok(reloaded.labelCenter.x > reloaded.source.maxX + 24 && reloaded.labelCenter.x < reloaded.target.x - 24)
 	} finally { editor.dispose(); restored.dispose() }
+})
+
+test('selected native nodes export with their live bound arrows as parseable Mermaid', () => {
+	const editor = new TestEditor()
+	try {
+		const source = DiagramSchema.parse({ title: 'API', nodes: [
+			{ id: 'client', kind: 'rectangle', label: 'Client', x: 0, y: 0, w: 180, h: 90 },
+			{ id: 'decision', kind: 'diamond', label: 'Valid?', x: 350, y: 0, w: 180, h: 110 },
+			{ id: 'service', kind: 'ellipse', label: 'Service', x: 700, y: 0, w: 180, h: 90 },
+		], edges: [
+			{ id: 'check', from: 'client', to: 'decision', label: 'Check' },
+			{ id: 'yes', from: 'decision', to: 'service', label: 'yes' },
+		] })
+		const { shapes } = createNativeDiagram(source, 'mermaid-export-proof', editor.getCurrentPageId())
+		applyNativeDiagram(editor, source, 'mermaid-export-proof', editor.getCurrentPageId(), false)
+		const ids = shapes.filter((shape) => shape.type === 'geo').map((shape) => shape.id!)
+		editor.select(...ids)
+		const before = editor.store.allRecords()
+		const result = exportSelectedDiagramAsMermaid(editor)
+		assert.equal(result.included.nodes, 3)
+		assert.equal(result.included.arrows, 2, 'connected arrows need not be selected individually')
+		assert.deepEqual(result.omitted, { shapes: 0, arrows: 0, approximatedShapes: 0, normalizedLabels: 0 })
+		const parsed = parseMermaidFlowchart(result.source)
+		assert.deepEqual(parsed.nodes.map(({ label, kind }) => ({ label, kind })), [
+			{ label: 'Client', kind: 'rectangle' },
+			{ label: 'Valid?', kind: 'diamond' },
+			{ label: 'Service', kind: 'ellipse' },
+		])
+		assert.deepEqual(parsed.edges.map(({ label }) => label), ['Check', 'yes'])
+		assert.deepEqual(editor.store.allRecords(), before, 'export never mutates the native board')
+	} finally { editor.dispose() }
+})
+
+test('Mermaid export reports unsupported selections and disconnected arrows instead of fabricating links', () => {
+	const editor = new TestEditor()
+	try {
+		const geo = createShapeId(), text = createShapeId(), arrow = createShapeId()
+		editor.createShapes([
+			{ id: geo, type: 'geo', x: 0, y: 0, props: { geo: 'cloud', w: 180, h: 90, richText: toRichText('API --> worker') } },
+			{ id: text, type: 'text', x: 250, y: 0, props: { richText: toRichText('floating caption') } },
+			{ id: arrow, type: 'arrow', x: 0, y: 180, props: { start: { x: 0, y: 0 }, end: { x: 100, y: 0 } } },
+		])
+		editor.select(geo, text, arrow)
+		const result = exportSelectedDiagramAsMermaid(editor, 'TD')
+		assert.match(result.source, /^flowchart TD\n/)
+		assert.equal(result.included.nodes, 1)
+		assert.equal(result.included.arrows, 0)
+		assert.deepEqual(result.omitted, { shapes: 1, arrows: 1, approximatedShapes: 1, normalizedLabels: 1 })
+		assert.equal(parseMermaidFlowchart(result.source).nodes[0].label, 'API → worker')
+		editor.select(text, arrow)
+		assert.throws(() => exportSelectedDiagramAsMermaid(editor), /Select at least one/i)
+	} finally { editor.dispose() }
 })

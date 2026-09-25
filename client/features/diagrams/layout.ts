@@ -4,6 +4,7 @@ type NodeShape = Extract<TLShape, { type: 'geo' | 'note' }>
 type Bounds = { x: number; y: number; w: number; h: number }
 type LayoutNode = { shape: NodeShape; bounds: Bounds }
 type Edge = { from: TLShapeId; to: TLShapeId }
+export type DiagramLayoutDirection = 'horizontal' | 'vertical' | 'tree'
 
 const HORIZONTAL_GAP = 160
 const VERTICAL_GAP = 64
@@ -62,15 +63,74 @@ function selectedGraph(editor: Editor): { nodes: LayoutNode[]; edges: Edge[] } |
 }
 
 /** True when the current native-node selection has at least one live connection. */
-export function canLayoutSelectedDiagram(editor: Editor): boolean {
-	return selectedGraph(editor) !== null
+export function canLayoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDirection = 'horizontal'): boolean {
+	const graph = selectedGraph(editor)
+	return graph !== null && (direction !== 'tree' || treeRoot(graph.nodes, graph.edges) !== null)
 }
 
-function positions(nodes: readonly LayoutNode[], edges: readonly Edge[]) {
+function treeRoot(nodes: readonly LayoutNode[], edges: readonly Edge[]): TLShapeId | null {
+	// A shared child or a cycle has no unambiguous tree placement. The other
+	// layout modes remain available for those graphs.
+	if (edges.length !== nodes.length - 1) return null
+	const incoming = new Map(nodes.map(({ shape }) => [shape.id, 0]))
+	for (const { to } of edges) incoming.set(to, (incoming.get(to) ?? 0) + 1)
+	if ([...incoming.values()].some((count) => count > 1)) return null
+	const roots = [...incoming].filter(([, count]) => count === 0)
+	return roots.length === 1 ? roots[0][0] : null
+}
+
+function treePositions(nodes: readonly LayoutNode[], edges: readonly Edge[]): Map<TLShapeId, { x: number; y: number }> {
+	const root = treeRoot(nodes, edges)!
+	const byId = new Map(nodes.map((node) => [node.shape.id, node]))
+	const children = new Map(nodes.map(({ shape }) => [shape.id, [] as TLShapeId[]]))
+	for (const { from, to } of edges) children.get(from)!.push(to)
+	for (const list of children.values()) list.sort((a, b) =>
+		byId.get(a)!.bounds.x - byId.get(b)!.bounds.x || byId.get(a)!.bounds.y - byId.get(b)!.bounds.y || a.localeCompare(b))
+	const width = new Map<TLShapeId, number>()
+	const rowHeight = new Map<number, number>()
+	const visit = (id: TLShapeId, depth: number): number => {
+		const own = byId.get(id)!.bounds
+		rowHeight.set(depth, Math.max(rowHeight.get(depth) ?? 0, own.h))
+		const childWidths = children.get(id)!.map((child) => visit(child, depth + 1))
+		const descendants = childWidths.reduce((sum, value) => sum + value, 0)
+			+ Math.max(0, childWidths.length - 1) * VERTICAL_GAP
+		const span = Math.max(own.w, descendants)
+		width.set(id, span)
+		return span
+	}
+	visit(root, 0)
+	const yByDepth = new Map<number, number>()
+	let rowY = Math.min(...nodes.map(({ bounds }) => bounds.y))
+	for (const depth of [...rowHeight.keys()].sort((a, b) => a - b)) {
+		yByDepth.set(depth, rowY)
+		rowY += rowHeight.get(depth)! + HORIZONTAL_GAP
+	}
+	const result = new Map<TLShapeId, { x: number; y: number }>()
+	const place = (id: TLShapeId, left: number, depth: number) => {
+		const own = byId.get(id)!.bounds
+		const span = width.get(id)!
+		result.set(id, { x: left + (span - own.w) / 2, y: yByDepth.get(depth)! })
+		const branches = children.get(id)!
+		const childWidth = branches.reduce((sum, child) => sum + width.get(child)!, 0)
+			+ Math.max(0, branches.length - 1) * VERTICAL_GAP
+		let childLeft = left + (span - childWidth) / 2
+		for (const child of branches) {
+			place(child, childLeft, depth + 1)
+			childLeft += width.get(child)! + VERTICAL_GAP
+		}
+	}
+	place(root, Math.min(...nodes.map(({ bounds }) => bounds.x)), 0)
+	return result
+}
+
+function positions(nodes: readonly LayoutNode[], edges: readonly Edge[], direction: DiagramLayoutDirection) {
+	if (direction === 'tree') return treePositions(nodes, edges)
+	const vertical = direction === 'vertical'
 	const byId = new Map(nodes.map((node) => [node.shape.id, node]))
 	const byOriginalPosition = (left: TLShapeId, right: TLShapeId) => {
 		const a = byId.get(left)!.bounds, b = byId.get(right)!.bounds
-		return a.y - b.y || a.x - b.x || left.localeCompare(right)
+		return vertical ? a.x - b.x || a.y - b.y || left.localeCompare(right)
+			: a.y - b.y || a.x - b.x || left.localeCompare(right)
 	}
 	const ids = [...byId.keys()].sort(byOriginalPosition)
 	const outgoing = new Map(ids.map((id) => [id, new Set<TLShapeId>()]))
@@ -102,18 +162,18 @@ function positions(nodes: readonly LayoutNode[], edges: readonly Edge[]) {
 	const originX = Math.min(...nodes.map(({ bounds }) => bounds.x))
 	const originY = Math.min(...nodes.map(({ bounds }) => bounds.y))
 	const result = new Map<TLShapeId, { x: number; y: number }>()
-	let x = originX
+	let primary = vertical ? originY : originX
 	for (const depth of [...layers.keys()].sort((a, b) => a - b)) {
 		const layer = layers.get(depth)!.sort(byOriginalPosition)
-		let y = originY
-		let width = 0
+		let secondary = vertical ? originX : originY
+		let maxPrimarySize = 0
 		for (const id of layer) {
 			const node = byId.get(id)!
-			result.set(id, { x, y })
-			y += node.bounds.h + VERTICAL_GAP
-			width = Math.max(width, node.bounds.w)
+			result.set(id, vertical ? { x: secondary, y: primary } : { x: primary, y: secondary })
+			secondary += (vertical ? node.bounds.w : node.bounds.h) + VERTICAL_GAP
+			maxPrimarySize = Math.max(maxPrimarySize, vertical ? node.bounds.h : node.bounds.w)
 		}
-		x += width + HORIZONTAL_GAP
+		primary += maxPrimarySize + HORIZONTAL_GAP
 	}
 	return result
 }
@@ -139,10 +199,10 @@ function clearOfOtherShapes(editor: Editor, nodes: readonly LayoutNode[], positi
 }
 
 /** Move selected page-level geo/note nodes into connected layers. Native arrow bindings follow the nodes. */
-export function layoutSelectedDiagram(editor: Editor): boolean {
+export function layoutSelectedDiagram(editor: Editor, direction: DiagramLayoutDirection = 'horizontal'): boolean {
 	const graph = selectedGraph(editor)
-	if (!graph) return false
-	const next = positions(graph.nodes, graph.edges)
+	if (!graph || (direction === 'tree' && !treeRoot(graph.nodes, graph.edges))) return false
+	const next = positions(graph.nodes, graph.edges, direction)
 	const shiftY = clearOfOtherShapes(editor, graph.nodes, next)
 	const changes = graph.nodes.flatMap(({ shape, bounds }) => {
 		const position = next.get(shape.id)!

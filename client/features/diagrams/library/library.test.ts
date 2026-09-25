@@ -9,6 +9,7 @@ import {
 	STARTERS, insertStarter, insertSavedBlock, loadPersonalBlocks,
 	removePersonalBlock, saveSelectionAsBlock,
 } from './library'
+import { createStandaloneNode, TECHNICAL_NODES } from '../technicalNodes'
 
 for (const handle of (process as NodeJS.Process & { _getActiveHandles(): unknown[] })._getActiveHandles()) {
 	if (handle instanceof MessagePort) handle.unref()
@@ -33,6 +34,7 @@ class TestElement {
 		return `<${this.tagName}${attributes}>${this.innerHTML}</${this.tagName}>`
 	}
 	remove() {}
+	focus() {}
 	addEventListener() {}
 	removeEventListener() {}
 	getBoundingClientRect() { return { x: 0, y: 0, width: 1080, height: 720, top: 0, left: 0, right: 1080, bottom: 720 } }
@@ -316,5 +318,67 @@ test('local library removes only the chosen block and rejects malformed persiste
 		storage.setItem('freeform:personal-library:v1', '{ broken json')
 		assert.deepEqual(loadPersonalBlocks(storage), [])
 		assert.deepEqual(loadPersonalBlocks({ getItem: () => { throw new Error('Storage blocked') }, setItem() {} }), [])
+	} finally { editor.dispose() }
+})
+
+test('keyboard node creation makes one editable native rectangle and one undo removes it', () => {
+	const editor = new TestEditor()
+	try {
+		const result = createStandaloneNode(editor)
+		assert.ok(result)
+		const shape = editor.getShape(result.nodeId)
+		assert.equal(shape?.type, 'geo')
+		assert.equal(shape.props.geo, 'rectangle')
+		assert.deepEqual(editor.getSelectedShapeIds(), [result.nodeId])
+		assert.equal(editor.getEditingShapeId(), result.nodeId)
+		const bounds = editor.getShapePageBounds(result.nodeId)!
+		assert.ok(Math.abs(bounds.center.x - editor.getViewportPageBounds().center.x) < 2)
+		assert.ok(Math.abs(bounds.center.y - editor.getViewportPageBounds().center.y) < 2)
+		editor.complete()
+		editor.undo()
+		assert.equal(editor.getShape(result.nodeId), undefined)
+	} finally { editor.dispose() }
+})
+
+test('technical nodes stay editable native shapes with typed metadata and no overlap', () => {
+	const editor = new TestEditor()
+	try {
+		assert.deepEqual(TECHNICAL_NODES.map(({ kind }) => kind),
+			['api', 'database', 'service', 'queue', 'function', 'cloud'])
+		const ids = TECHNICAL_NODES.map(({ kind }) => {
+			const result = createStandaloneNode(editor, kind)
+			assert.ok(result)
+			const shape = editor.getShape(result.nodeId)
+			assert.equal(shape?.type, 'geo')
+			assert.deepEqual(shape.meta.freeformTechnicalNode, { kind, version: 1 })
+			assert.ok(shape.props.richText, `${kind} has editable rich text`)
+			const bounds = editor.getShapePageBounds(result.nodeId)!
+			const viewport = editor.getViewportPageBounds()
+			assert.ok(bounds.x >= viewport.x && bounds.maxX <= viewport.maxX
+				&& bounds.y >= viewport.y && bounds.maxY <= viewport.maxY,
+				`${kind} remains visible after insertion`)
+			editor.complete()
+			return result.nodeId
+		})
+		const boxes = ids.map((id) => editor.getShapePageBounds(id)!)
+		for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+			assert.ok(boxes[i].maxX + 16 <= boxes[j].x || boxes[j].maxX + 16 <= boxes[i].x
+				|| boxes[i].maxY + 16 <= boxes[j].y || boxes[j].maxY + 16 <= boxes[i].y,
+				'technical nodes should not cover each other')
+		}
+	} finally { editor.dispose() }
+})
+
+test('standalone creation respects read-only mode and capacity', () => {
+	const editor = new TestEditor(1)
+	try {
+		editor.updateInstanceState({ isReadonly: true })
+		assert.equal(createStandaloneNode(editor), null)
+		assert.equal(editor.getCurrentPageShapes().length, 0)
+		editor.updateInstanceState({ isReadonly: false })
+		assert.ok(createStandaloneNode(editor))
+		editor.complete()
+		assert.equal(createStandaloneNode(editor), null)
+		assert.equal(editor.getCurrentPageShapes().length, 1)
 	} finally { editor.dispose() }
 })
