@@ -25,6 +25,17 @@ test('arrange diagram is searchable only when a diagram can be laid out', () => 
 	assert.deepEqual(unavailable.map((command) => command.id), available.filter((command) => command.id !== 'arrange-diagram').map((command) => command.id))
 })
 
+test('connected node directions appear only for an eligible selected node', () => {
+	const disconnected = availableCommandDefinitions(false, false)
+	const connected = availableCommandDefinitions(false, true)
+	assert.deepEqual(filterCommands(disconnected, 'connect node').map((command) => command.id), [])
+	assert.deepEqual(filterCommands(connected, 'connect node').map((command) => command.id), [
+		'connect-up', 'connect-right', 'connect-down', 'connect-left',
+	])
+	assert.deepEqual(filterCommands(connected, 'connect below').map((command) => command.id), ['connect-down'])
+	assert.equal(connected.length, disconnected.length + 4)
+})
+
 test('keyboard selection wraps and the palette chord preserves native K and modified K', () => {
 	assert.equal(moveActiveIndex(0, -1, 3), 2)
 	assert.equal(moveActiveIndex(2, 1, 3), 0)

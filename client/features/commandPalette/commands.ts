@@ -20,10 +20,18 @@ export const commandDefinitions: readonly CommandDefinition[] = [
 	{ id: 'zoom-to-selection', kind: 'action', label: 'Zoom to selection', keywords: 'selected shapes' },
 	{ id: 'zoom-to-100', kind: 'action', label: 'Reset zoom', keywords: '100 percent actual size' },
 	{ id: 'arrange-diagram', kind: 'custom', label: 'Arrange diagram', keywords: 'auto layout flowchart connected nodes' },
+	{ id: 'connect-up', kind: 'custom', label: 'Connect node above', keywords: 'connect node above up diagram' },
+	{ id: 'connect-right', kind: 'custom', label: 'Connect node right', keywords: 'connect node right diagram' },
+	{ id: 'connect-down', kind: 'custom', label: 'Connect node below', keywords: 'connect node below down diagram' },
+	{ id: 'connect-left', kind: 'custom', label: 'Connect node left', keywords: 'connect node left diagram' },
 ]
 
-export function availableCommandDefinitions(canArrangeDiagram: boolean): CommandDefinition[] {
-	return commandDefinitions.filter((definition) => definition.id !== 'arrange-diagram' || canArrangeDiagram)
+export function availableCommandDefinitions(canArrangeDiagram: boolean, canConnectNode = false): CommandDefinition[] {
+	return commandDefinitions.filter((definition) => {
+		if (definition.id === 'arrange-diagram') return canArrangeDiagram
+		if (definition.id.startsWith('connect-')) return canConnectNode
+		return true
+	})
 }
 
 export function filterCommands<T extends { label: string; keywords: string }>(commands: readonly T[], query: string): T[] {

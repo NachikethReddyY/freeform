@@ -1,11 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { TldrawUiKbd, useActions, useEditor, useTools, useValue } from 'tldraw'
 import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../diagrams/layout'
+import { addConnectedNode, canAddConnectedNode, type ConnectedNodeDirection } from '../diagrams/connectedNode'
 import { availableCommandDefinitions, filterCommands, isPaletteShortcut, moveActiveIndex, type CommandDefinition } from './commands'
 import './commandPalette.css'
 
 export interface CommandPaletteProps { open: boolean; onOpenChange: (open: boolean) => void }
 type PaletteCommand = CommandDefinition & { onSelect: () => void | Promise<void>; kbd?: string }
+const connectedDirectionById: Record<string, ConnectedNodeDirection> = {
+	'connect-up': 'up', 'connect-right': 'right', 'connect-down': 'down', 'connect-left': 'left',
+}
 
 /** Mount inside Tldraw to reuse its configured tool and action registries. */
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
@@ -19,19 +23,23 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 	const [query, setQuery] = useState('')
 	const [active, setActive] = useState(0)
 	const [error, setError] = useState('')
-	const { readonly, selected, canArrangeDiagram } = useValue('palette availability', () => ({
+	const { readonly, selected, canArrangeDiagram, canConnectNode } = useValue('palette availability', () => ({
 		readonly: editor.getIsReadonly(),
 		selected: editor.getSelectedShapeIds().length,
 		canArrangeDiagram: canLayoutSelectedDiagram(editor),
+		canConnectNode: canAddConnectedNode(editor),
 	}), [editor])
-	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram).flatMap<PaletteCommand>((definition) => {
+	const commands = useMemo(() => availableCommandDefinitions(canArrangeDiagram, canConnectNode).flatMap<PaletteCommand>((definition) => {
 		if (definition.kind === 'custom') {
-			return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor) } }]
+			if (definition.id === 'arrange-diagram') return [{ ...definition, onSelect: () => { layoutSelectedDiagram(editor) } }]
+			const direction = connectedDirectionById[definition.id]
+			if (!direction) return []
+			return [{ ...definition, onSelect: () => { addConnectedNode(editor, direction) } }]
 		}
 		const native = definition.kind === 'tool' ? tools[definition.id] : actions[definition.id]
 		if (!native || (readonly && !native.readonlyOk) || (definition.id === 'zoom-to-selection' && selected === 0)) return []
 		return [{ ...definition, onSelect: () => native.onSelect('dialog'), kbd: native.kbd }]
-	}), [actions, tools, editor, readonly, selected, canArrangeDiagram])
+	}), [actions, tools, editor, readonly, selected, canArrangeDiagram, canConnectNode])
 	const matches = filterCommands(commands, query)
 	const selectedIndex = Math.min(active, Math.max(0, matches.length - 1))
 
@@ -63,11 +71,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
 	const choose = async (command: typeof commands[number]) => {
 		try {
+			// The label editor must receive focus after the modal releases it.
+			if (command.id in connectedDirectionById) {
+				onOpenChange(false)
+				dialog.current?.close()
+				await command.onSelect()
+				return
+			}
 			// Native commands still delegate to tldraw's configured registry.
 			await command.onSelect()
 			onOpenChange(false)
 			dialog.current?.close()
-			editor.focus()
+			if (!editor.getEditingShapeId()) editor.focus()
 		} catch (cause) { setError(cause instanceof Error ? cause.message : 'This command could not run.') }
 	}
 
