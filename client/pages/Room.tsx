@@ -44,6 +44,7 @@ import { BoardPreviewRecorder } from '../features/boards/BoardPreviewRecorder'
 import { CommandPalette } from '../features/commandPalette/CommandPalette'
 import { DiagramProposalPanel } from '../features/diagrams/DiagramProposalPanel'
 import { ConnectedNodeControls } from '../features/diagrams/connectedNodeControls'
+import { BoardLayers } from '../features/layers/BoardLayers'
 import { canLayoutSelectedDiagram, layoutSelectedDiagram } from '../features/diagrams/layout'
 import { PresentationControls } from '../features/presentation/presentation'
 import { diagramFromClipboard, type IncomingPasteDiagram } from '../features/paste/diagramPaste'
@@ -134,6 +135,7 @@ function BoardPresentationControls() {
 			<button type="button" aria-label="Undo" title="Undo" disabled={!history.undo} onClick={() => actions.undo.onSelect('navigation-zone')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M4 12h10a6 6 0 0 1 6 6" /></svg></button>
 			<button type="button" aria-label="Redo" title="Redo" disabled={!history.redo} onClick={() => actions.redo.onSelect('navigation-zone')}><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m5-5H10a6 6 0 0 0-6 6" /></svg></button>
 		</div>
+		<BoardLayers editor={editor} placement="above" />
 		<PresentationControls editor={editor} />
 		<BoardSearch editor={editor} />
 		<BoardFiles editor={editor} />
