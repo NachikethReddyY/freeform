@@ -10,6 +10,7 @@ import {
 import { filterBoardsByName, openBoardFromDashboard } from './dashboardModel'
 import { useBoardPreview } from './useBoardPreview'
 import { AccountTools } from '../auth/AccountTools'
+import { BoardMoveMenu } from './BoardMoveMenu'
 import './BoardDashboard.css'
 
 function formatOpenedAt(timestamp: number): string {
@@ -115,9 +116,14 @@ function BoardPreviewCard({
 			setMenuPlacement({ above: openAbove, maxHeight: Math.max(0, Math.floor(openAbove ? above : below) - 5) })
 		}
 		placeMenu()
+		const dismissOutside = (event: PointerEvent) => {
+			if (event.target instanceof Node && !menuRef.current?.contains(event.target) && !menuButtonRef.current?.contains(event.target)) setMenuOpen(false)
+		}
+		document.addEventListener('pointerdown', dismissOutside)
 		window.addEventListener('resize', placeMenu)
 		window.addEventListener('scroll', placeMenu, true)
 		return () => {
+			document.removeEventListener('pointerdown', dismissOutside)
 			window.removeEventListener('resize', placeMenu)
 			window.removeEventListener('scroll', placeMenu, true)
 		}
@@ -191,20 +197,26 @@ function BoardPreviewCard({
 		<div className="board-dashboard-card-footer">
 			<span>{collectionTitle}</span>
 			{feedback && <small role="status">{feedback}</small>}
-			<div className="board-dashboard-card-menu-wrap">
+			<div className="board-dashboard-card-menu-wrap" onBlur={(event) => {
+				if (!event.currentTarget.contains(event.relatedTarget)) setMenuOpen(false)
+			}} onKeyDown={(event) => {
+				if (event.key === 'Escape') {
+					event.preventDefault()
+					setMenuOpen(false)
+					menuButtonRef.current?.focus()
+				}
+			}}>
 				<button ref={menuButtonRef} type="button" className="board-dashboard-card-menu-button" aria-label={`Board actions for ${board.title}`} aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>···</button>
 				{menuOpen && <div ref={menuRef} className={`board-dashboard-card-menu${menuPlacement?.above ? ' is-above' : ''}`} style={{ maxHeight: menuPlacement ? `${menuPlacement.maxHeight}px` : undefined }} role="group" aria-label={`Actions for ${board.title}`}>
 					{inTrash
 						? <button type="button" onClick={() => { onRestore(); setMenuOpen(false) }}>Restore</button>
 						: <>
 							<button type="button" onClick={() => { setTitle(board.title); setEditing(true); setMenuOpen(false) }}>Rename</button>
-							<label>
-								<span>Move to</span>
-								<select aria-label={`Move ${board.title} to collection`} value="" onChange={(event) => { if (event.target.value) { onMove(event.target.value); setMenuOpen(false) } }}>
-									<option value="" disabled>Collection…</option>
-									{collections.map((collection) => <option value={collection.id} key={collection.id}>{collection.title}</option>)}
-								</select>
-							</label>
+							<BoardMoveMenu boardTitle={board.title} collectionId={board.collectionId} collections={collections} onMove={(collectionId) => {
+								onMove(collectionId)
+								setMenuOpen(false)
+								menuButtonRef.current?.focus()
+							}} />
 							<button type="button" onClick={() => { onDelete(); setMenuOpen(false) }}>Delete</button>
 						</>}
 					<button type="button" onClick={() => void copyLink()}>Copy board link</button>

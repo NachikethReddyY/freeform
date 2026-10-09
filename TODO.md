@@ -1,5 +1,11 @@
 # Freeform tasks
 
+## Fetch failure and local password diagnosis — 2026-09-26
+
+- [x] Inspect the active server, auth implementation, and browser without changing credentials or board data. `/api/me` returns 200; direct shadow-DOM inspection found the Vite overlay that the page-text snapshot omitted.
+- [x] Reproduce an invalid-password POST returning 500 instead of 401 in an isolated workspace. The real owner account was not locked at inspection. Undici 7.24.4 loses the 401 response for a streamed request body; upstream fix is nodejs/undici#5006.
+- [x] Pin Miniflare's Undici dependency to 7.24.8 and restart the local server. The same regression check now returns 401 JSON. Isolated browser registration, wrong-password feedback, successful login and dashboard access pass without an overlay. All 10 focused auth tests and the build pass. The original owner credential record is unchanged; the user's actual password remains unknown and unverified. Proof is in `.evidence/fetch-password-20260926/`.
+
 ## Postplan partial-feature completion — 2026-09-25
 
 - [x] Retain every slide traversed during rapid presentation navigation until the camera move finishes. A failed-first regression now passes in the 29/29 presentation suite, and the build passes. On a disposable three-frame Safari board, two quick Next actions showed Slide 3 during and after the move without a blank stage. This checks the sampled navigation path, not the quality of every transition; report v20 records this result.

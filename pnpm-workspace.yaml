@@ -4,3 +4,6 @@ allowBuilds:
   workerd: true
 minimumReleaseAgeExclude:
   - excalifont@1.0.0
+overrides:
+  # Preserve 401 responses for streamed POST bodies (nodejs/undici#5006).
+  miniflare>undici: 7.24.8
